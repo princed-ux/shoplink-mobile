@@ -11,7 +11,7 @@ import Toast from 'react-native-toast-message';
 import { Camera, LogOut, Save, User, ShieldCheck, Lock, Globe, ShoppingBag, Gift, Tag, Package, Star, AlertCircle, Check } from 'lucide-react-native';
 
 // !!! MATCH THIS WITH YOUR BACKEND !!!
-const API_URL = 'http://localhost:5000'; 
+const API_URL = 'https://api.shoplinkvi.com'; 
 
 const { width, height } = Dimensions.get('window');
 

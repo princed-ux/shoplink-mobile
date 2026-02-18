@@ -22,7 +22,7 @@ if (Platform.OS !== 'web') {
 }
 
 // !!! API CONFIG !!!
-const API_URL = 'http://localhost:5000'; 
+const API_URL = 'https://api.shoplinkvi.com'; 
 
 const { width, height } = Dimensions.get('window');
 

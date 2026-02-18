@@ -13,7 +13,7 @@ import * as SecureStore from 'expo-secure-store';
 import Toast from 'react-native-toast-message';
 
 // !!! MATCH YOUR BACKEND !!!
-const API_URL = 'http://localhost:5000'; 
+const API_URL = 'https://api.shoplinkvi.com'; 
 
 const { width, height } = Dimensions.get('window');
 
