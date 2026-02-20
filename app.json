@@ -4,10 +4,10 @@
     "slug": "shoplink-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/main-logo.png",
+    "icon": "./assets/icon-logo.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/main-logo.png",
+      "image": "./assets/icon-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
