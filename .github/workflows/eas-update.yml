@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: 20.x  # <--- THIS IS THE MAGIC FIX!
           cache: npm
 
       - name: Setup Expo
@@ -30,4 +30,5 @@ jobs:
         run: npm install
 
       - name: Publish update to Expo
-        run: eas update --auto --non-interactive
+        # Also removed the deprecated flag here to make it perfectly clean
+        run: eas update --auto
