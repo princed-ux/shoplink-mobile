@@ -39,72 +39,77 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <FallingBackground />
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.flex1}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-          
-          <View style={styles.headerBox}>
-            <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
-            <Text style={styles.title}>ShopLink.vi</Text>
-            <Text style={styles.subtitle}>Manager Portal</Text>
-          </View>
+      
+      {/* KeyboardAvoidingView has been completely removed */}
 
-          <View style={styles.formBox}>
-              <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Phone Number</Text>
-                  <View style={getContainerStyle('loginPhone')}>
-                      <Phone size={20} color={activeInput === 'loginPhone' ? "#10b981" : "#94a3b8"} style={styles.icon}/>
-                      <TextInput 
-                          placeholder="080 1234 5678" 
-                          value={phone} 
-                          onChangeText={setPhone} 
-                          onFocus={() => setActiveInput('loginPhone')}
-                          onBlur={() => setActiveInput(null)}
-                          keyboardType="phone-pad"
-                          style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
-                          placeholderTextColor="#cbd5e1"
-                      />
-                  </View>
-              </View>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false} 
+        keyboardShouldPersistTaps="handled"
+      >
+        
+        <View style={styles.headerBox}>
+          <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
+          <Text style={styles.title}>ShopLink.vi</Text>
+          <Text style={styles.subtitle}>Manager Portal</Text>
+        </View>
 
-              <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Password</Text>
-                  <View style={getContainerStyle('loginPass')}>
-                      <Lock size={20} color={activeInput === 'loginPass' ? "#10b981" : "#94a3b8"} style={styles.icon}/>
-                      <TextInput 
-                          placeholder="••••••••" 
-                          value={password} 
-                          onChangeText={setPassword}
-                          onFocus={() => setActiveInput('loginPass')}
-                          onBlur={() => setActiveInput(null)}
-                          secureTextEntry={!showPassword}
-                          style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
-                          placeholderTextColor="#cbd5e1"
-                      />
-                      <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                          {showPassword ? <EyeOff size={20} color="#94a3b8"/> : <Eye size={20} color="#94a3b8"/>}
-                      </TouchableOpacity>
-                  </View>
-              </View>
-              
-              <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} style={styles.forgotBtn}>
-                  <Text style={styles.forgotText}>Forgot Password?</Text>
-              </TouchableOpacity>
+        <View style={styles.formBox}>
+            <View style={styles.inputGroup}>
+                <Text style={styles.label}>Phone Number</Text>
+                <View style={getContainerStyle('loginPhone')}>
+                    <Phone size={20} color={activeInput === 'loginPhone' ? "#10b981" : "#94a3b8"} style={styles.icon}/>
+                    <TextInput 
+                        placeholder="080 1234 5678" 
+                        value={phone} 
+                        onChangeText={setPhone} 
+                        onFocus={() => setActiveInput('loginPhone')}
+                        onBlur={() => setActiveInput(null)}
+                        keyboardType="phone-pad"
+                        style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
+                        placeholderTextColor="#cbd5e1"
+                    />
+                </View>
+            </View>
 
-              <TouchableOpacity onPress={handleLogin} disabled={loading} style={styles.submitBtn}>
-                  {loading ? <ActivityIndicator color="white" /> : <Text style={styles.submitText}>Sign In</Text>}
-              </TouchableOpacity>
-          </View>
-
-          <View style={styles.footerRow}>
-            <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-                <Text style={styles.footerText}>Don't have a store? <Text style={styles.footerTextBold}>Create One</Text></Text>
+            <View style={styles.inputGroup}>
+                <Text style={styles.label}>Password</Text>
+                <View style={getContainerStyle('loginPass')}>
+                    <Lock size={20} color={activeInput === 'loginPass' ? "#10b981" : "#94a3b8"} style={styles.icon}/>
+                    <TextInput 
+                        placeholder="••••••••" 
+                        value={password} 
+                        onChangeText={setPassword}
+                        onFocus={() => setActiveInput('loginPass')}
+                        onBlur={() => setActiveInput(null)}
+                        secureTextEntry={!showPassword}
+                        style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
+                        placeholderTextColor="#cbd5e1"
+                    />
+                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                        {showPassword ? <EyeOff size={20} color="#94a3b8"/> : <Eye size={20} color="#94a3b8"/>}
+                    </TouchableOpacity>
+                </View>
+            </View>
+            
+            <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} style={styles.forgotBtn}>
+                <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
-          </View>
 
-        </ScrollView>
-      </KeyboardAvoidingView>
+            <TouchableOpacity onPress={handleLogin} disabled={loading} style={styles.submitBtn}>
+                {loading ? <ActivityIndicator color="white" /> : <Text style={styles.submitText}>Sign In</Text>}
+            </TouchableOpacity>
+        </View>
+
+        <View style={styles.footerRow}>
+          <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+              <Text style={styles.footerText}>Don't have a store? <Text style={styles.footerTextBold}>Create One</Text></Text>
+          </TouchableOpacity>
+        </View>
+
+      </ScrollView>
     </SafeAreaView>
   );
 }

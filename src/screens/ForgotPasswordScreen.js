@@ -72,7 +72,7 @@ export default function ForgotPasswordScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <FallingBackground />
       <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeBtn}>
@@ -80,109 +80,110 @@ export default function ForgotPasswordScreen({ navigation }) {
           </TouchableOpacity>
       </View>
 
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.flex1}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            
-            {step === 1 && (
-                <View style={styles.stepBox}>
-                    <View style={styles.iconCircle}><ShieldCheck size={32} color="#64748b" /></View>
-                    <Text style={styles.title}>Recovery</Text>
-                    <Text style={styles.subtitle}>Enter your registered WhatsApp number to find your account.</Text>
-                    
-                    <View style={getContainerStyle('recPhone')}>
-                        <Phone size={20} color={activeInput === 'recPhone' ? "#10b981" : "#94a3b8"} style={styles.icon}/>
-                        <TextInput 
-                            placeholder="Phone Number" 
-                            value={phone} 
-                            onChangeText={setPhone}
-                            onFocus={() => setActiveInput('recPhone')}
-                            onBlur={() => setActiveInput(null)}
-                            keyboardType="phone-pad" 
-                            style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
-                        />
-                    </View>
-                    <TouchableOpacity onPress={handleFetch} disabled={loading} style={styles.actionBtn}>
-                        {loading ? <ActivityIndicator color="white"/> : <Text style={styles.actionBtnText}>Find Account</Text>}
-                    </TouchableOpacity>
-                </View>
-            )}
+      {/* KeyboardAvoidingView has been completely removed */}
 
-            {step === 2 && (
-                <View style={styles.stepBox}>
-                    <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn}>
-                        <Text style={styles.backBtnText}>BACK</Text>
-                    </TouchableOpacity>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          
+          {step === 1 && (
+              <View style={styles.stepBox}>
+                  <View style={styles.iconCircle}><ShieldCheck size={32} color="#64748b" /></View>
+                  <Text style={styles.title}>Recovery</Text>
+                  <Text style={styles.subtitle}>Enter your registered WhatsApp number to find your account.</Text>
+                  
+                  <View style={getContainerStyle('recPhone')}>
+                      <Phone size={20} color={activeInput === 'recPhone' ? "#10b981" : "#94a3b8"} style={styles.icon}/>
+                      <TextInput 
+                          placeholder="Phone Number" 
+                          value={phone} 
+                          onChangeText={setPhone}
+                          onFocus={() => setActiveInput('recPhone')}
+                          onBlur={() => setActiveInput(null)}
+                          keyboardType="phone-pad" 
+                          style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
+                      />
+                  </View>
+                  <TouchableOpacity onPress={handleFetch} disabled={loading} style={styles.actionBtn}>
+                      {loading ? <ActivityIndicator color="white"/> : <Text style={styles.actionBtnText}>Find Account</Text>}
+                  </TouchableOpacity>
+              </View>
+          )}
 
-                    <View style={styles.questionBox}>
-                        <Text style={styles.questionLabel}>Security Question</Text>
-                        <Text style={styles.questionText}>{fetchedQuestion}</Text>
-                    </View>
-                    
-                    <Text style={styles.label}>Your Answer</Text>
-                    <View style={getContainerStyle('recAns')}>
-                        <TextInput 
-                            placeholder="Type answer here..." 
-                            value={answer} 
-                            onChangeText={setAnswer} 
-                            onFocus={() => setActiveInput('recAns')}
-                            onBlur={() => setActiveInput(null)}
-                            style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
-                        />
-                    </View>
-                    
-                    <TouchableOpacity onPress={handleVerifyAnswer} disabled={loading} style={styles.verifyBtn}>
-                        {loading ? <ActivityIndicator color="white"/> : <Text style={styles.actionBtnText}>Verify Answer</Text>}
-                    </TouchableOpacity>
-                </View>
-            )}
+          {step === 2 && (
+              <View style={styles.stepBox}>
+                  <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn}>
+                      <Text style={styles.backBtnText}>BACK</Text>
+                  </TouchableOpacity>
 
-            {step === 3 && (
-                <View style={styles.stepBox}>
-                    <View style={styles.iconCircleGreen}><Check size={32} color="#059669" /></View>
-                    <Text style={styles.title}>Create New Password</Text>
+                  <View style={styles.questionBox}>
+                      <Text style={styles.questionLabel}>Security Question</Text>
+                      <Text style={styles.questionText}>{fetchedQuestion}</Text>
+                  </View>
+                  
+                  <Text style={styles.label}>Your Answer</Text>
+                  <View style={getContainerStyle('recAns')}>
+                      <TextInput 
+                          placeholder="Type answer here..." 
+                          value={answer} 
+                          onChangeText={setAnswer} 
+                          onFocus={() => setActiveInput('recAns')}
+                          onBlur={() => setActiveInput(null)}
+                          style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
+                          placeholderTextColor="#cbd5e1"
+                      />
+                  </View>
+                  
+                  <TouchableOpacity onPress={handleVerifyAnswer} disabled={loading} style={styles.verifyBtn}>
+                      {loading ? <ActivityIndicator color="white"/> : <Text style={styles.actionBtnText}>Verify Answer</Text>}
+                  </TouchableOpacity>
+              </View>
+          )}
 
-                    <Text style={[styles.label, { marginTop: 24 }]}>New Password</Text>
-                    <View style={[getContainerStyle('recPass'), { marginBottom: 16 }]}>
-                        <Key size={20} color={activeInput === 'recPass' ? "#10b981" : "#94a3b8"} style={styles.icon}/>
-                        <TextInput 
-                            placeholder="Min 6 characters" 
-                            value={newPassword} 
-                            onChangeText={setNewPassword} 
-                            onFocus={() => setActiveInput('recPass')}
-                            onBlur={() => setActiveInput(null)}
-                            secureTextEntry={!showNewPass}
-                            style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
-                        />
-                        <TouchableOpacity onPress={() => setShowNewPass(!showNewPass)}>
-                            {showNewPass ? <EyeOff size={20} color="#94a3b8"/> : <Eye size={20} color="#94a3b8"/>}
-                        </TouchableOpacity>
-                    </View>
+          {step === 3 && (
+              <View style={styles.stepBox}>
+                  <View style={styles.iconCircleGreen}><Check size={32} color="#059669" /></View>
+                  <Text style={styles.title}>Create New Password</Text>
 
-                    <Text style={styles.label}>Confirm Password</Text>
-                    <View style={getContainerStyle('recConfPass')}>
-                        <Key size={20} color={activeInput === 'recConfPass' ? "#10b981" : "#94a3b8"} style={styles.icon}/>
-                        <TextInput 
-                            placeholder="Re-enter password" 
-                            value={confirmPassword} 
-                            onChangeText={setConfirmPassword} 
-                            onFocus={() => setActiveInput('recConfPass')}
-                            onBlur={() => setActiveInput(null)}
-                            secureTextEntry={!showConfPass}
-                            style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
-                        />
-                        <TouchableOpacity onPress={() => setShowConfPass(!showConfPass)}>
-                            {showConfPass ? <EyeOff size={20} color="#94a3b8"/> : <Eye size={20} color="#94a3b8"/>}
-                        </TouchableOpacity>
-                    </View>
-                    
-                    <TouchableOpacity onPress={handleReset} disabled={loading} style={styles.actionBtn}>
-                        {loading ? <ActivityIndicator color="white"/> : <Text style={styles.actionBtnText}>Reset Password</Text>}
-                    </TouchableOpacity>
-                </View>
-            )}
+                  <Text style={[styles.label, { marginTop: 24 }]}>New Password</Text>
+                  <View style={[getContainerStyle('recPass'), { marginBottom: 16 }]}>
+                      <Key size={20} color={activeInput === 'recPass' ? "#10b981" : "#94a3b8"} style={styles.icon}/>
+                      <TextInput 
+                          placeholder="Min 6 characters" 
+                          value={newPassword} 
+                          onChangeText={setNewPassword} 
+                          onFocus={() => setActiveInput('recPass')}
+                          onBlur={() => setActiveInput(null)}
+                          secureTextEntry={!showNewPass}
+                          style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
+                      />
+                      <TouchableOpacity onPress={() => setShowNewPass(!showNewPass)}>
+                          {showNewPass ? <EyeOff size={20} color="#94a3b8"/> : <Eye size={20} color="#94a3b8"/>}
+                      </TouchableOpacity>
+                  </View>
 
-        </ScrollView>
-      </KeyboardAvoidingView>
+                  <Text style={styles.label}>Confirm Password</Text>
+                  <View style={getContainerStyle('recConfPass')}>
+                      <Key size={20} color={activeInput === 'recConfPass' ? "#10b981" : "#94a3b8"} style={styles.icon}/>
+                      <TextInput 
+                          placeholder="Re-enter password" 
+                          value={confirmPassword} 
+                          onChangeText={setConfirmPassword} 
+                          onFocus={() => setActiveInput('recConfPass')}
+                          onBlur={() => setActiveInput(null)}
+                          secureTextEntry={!showConfPass}
+                          style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
+                      />
+                      <TouchableOpacity onPress={() => setShowConfPass(!showConfPass)}>
+                          {showConfPass ? <EyeOff size={20} color="#94a3b8"/> : <Eye size={20} color="#94a3b8"/>}
+                      </TouchableOpacity>
+                  </View>
+                  
+                  <TouchableOpacity onPress={handleReset} disabled={loading} style={styles.actionBtn}>
+                      {loading ? <ActivityIndicator color="white"/> : <Text style={styles.actionBtnText}>Reset Password</Text>}
+                  </TouchableOpacity>
+              </View>
+          )}
+
+      </ScrollView>
     </SafeAreaView>
   );
 }

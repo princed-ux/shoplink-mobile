@@ -130,162 +130,168 @@ export default function SignupScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    // 1. ADDED edges={['top', 'left', 'right']} TO STOP THE BOTTOM INSET JUMPING
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <FallingBackground />
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.flex1}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-          
-          <View style={styles.headerBox}>
-            <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
-            <Text style={styles.title}>ShopLink.vi</Text>
-            <Text style={styles.subtitle}>Start Your Business</Text>
-          </View>
+      
+      {/* 2. KEYBOARD AVOIDING VIEW IS COMPLETELY DELETED HERE */}
 
-          <View style={styles.formBox}>
-              
-              {/* STEP 1: BASIC INFO */}
-              {step === 1 && (
-                  <View style={styles.stepContainer}>
-                      <View style={styles.inputGroup}>
-                          <Text style={styles.label}>Shop Name</Text>
-                          <View style={getContainerStyle('shopName')}>
-                              <Store size={20} color={activeInput === 'shopName' ? "#10b981" : "#94a3b8"} style={styles.icon}/>
-                              <TextInput 
-                                  placeholder="e.g. My Awesome Store" 
-                                  value={shopName} 
-                                  onChangeText={setShopName} 
-                                  onFocus={() => setActiveInput('shopName')}
-                                  onBlur={() => setActiveInput(null)}
-                                  style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
-                                  placeholderTextColor="#cbd5e1"
-                              />
-                          </View>
-                      </View>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false} 
+        keyboardShouldPersistTaps="handled"
+      >
+        
+        <View style={styles.headerBox}>
+          <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
+          <Text style={styles.title}>ShopLink.vi</Text>
+          <Text style={styles.subtitle}>Start Your Business</Text>
+        </View>
 
-                      <View style={styles.inputGroup}>
-                          <Text style={styles.label}>Your Unique Link</Text>
-                          <View style={getContainerStyle('slug')}>
-                              <LinkIcon size={20} color={activeInput === 'slug' ? "#10b981" : "#94a3b8"} style={styles.icon}/>
-                              <Text style={styles.prefixText}>shop.vi/</Text>
-                              <TextInput 
-                                  placeholder="my-store" 
-                                  value={slug} 
-                                  onChangeText={(text) => setSlug(text.toLowerCase().replace(/[^a-z0-9]/g, ''))} // Auto format manually entered slugs
-                                  onFocus={() => setActiveInput('slug')}
-                                  onBlur={() => setActiveInput(null)}
-                                  autoCapitalize="none"
-                                  style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
-                                  placeholderTextColor="#cbd5e1"
-                              />
-                              {slugStatus === 'checking' && <ActivityIndicator size="small" color="#94a3b8" />}
-                              {slugStatus === 'available' && <Check size={20} color="#10b981" />}
-                              {slugStatus === 'taken' && <AlertCircle size={20} color="#ef4444" />}
-                          </View>
-                          {slugStatus === 'taken' && <Text style={styles.errorText}>This link is already taken.</Text>}
-                      </View>
+        <View style={styles.formBox}>
+            
+            {/* STEP 1: BASIC INFO */}
+            {step === 1 && (
+                <View style={styles.stepContainer}>
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Shop Name</Text>
+                        <View style={getContainerStyle('shopName')}>
+                            <Store size={20} color={activeInput === 'shopName' ? "#10b981" : "#94a3b8"} style={styles.icon}/>
+                            <TextInput 
+                                placeholder="e.g. My Awesome Store" 
+                                value={shopName} 
+                                onChangeText={setShopName} 
+                                onFocus={() => setActiveInput('shopName')}
+                                onBlur={() => setActiveInput(null)}
+                                style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
+                                placeholderTextColor="#cbd5e1"
+                            />
+                        </View>
+                    </View>
 
-                      <View style={styles.inputGroup}>
-                          <Text style={styles.label}>WhatsApp Number</Text>
-                          <View style={getContainerStyle('phone')}>
-                              <Phone size={20} color={activeInput === 'phone' ? "#10b981" : "#94a3b8"} style={styles.icon}/>
-                              <TextInput 
-                                  placeholder="080 1234 5678" 
-                                  value={phone} 
-                                  onChangeText={setPhone} 
-                                  onFocus={() => setActiveInput('phone')}
-                                  onBlur={() => setActiveInput(null)}
-                                  keyboardType="phone-pad"
-                                  style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
-                                  placeholderTextColor="#cbd5e1"
-                              />
-                          </View>
-                      </View>
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Your Unique Link</Text>
+                        <View style={getContainerStyle('slug')}>
+                            <LinkIcon size={20} color={activeInput === 'slug' ? "#10b981" : "#94a3b8"} style={styles.icon}/>
+                            <Text style={styles.prefixText}>shop.vi/</Text>
+                            <TextInput 
+                                placeholder="my-store" 
+                                value={slug} 
+                                onChangeText={(text) => setSlug(text.toLowerCase().replace(/[^a-z0-9]/g, ''))} 
+                                onFocus={() => setActiveInput('slug')}
+                                onBlur={() => setActiveInput(null)}
+                                autoCapitalize="none"
+                                style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
+                                placeholderTextColor="#cbd5e1"
+                            />
+                            {slugStatus === 'checking' && <ActivityIndicator size="small" color="#94a3b8" />}
+                            {slugStatus === 'available' && <Check size={20} color="#10b981" />}
+                            {slugStatus === 'taken' && <AlertCircle size={20} color="#ef4444" />}
+                        </View>
+                        {slugStatus === 'taken' && <Text style={styles.errorText}>This link is already taken.</Text>}
+                    </View>
 
-                      <View style={styles.inputGroup}>
-                          <Text style={styles.label}>Password</Text>
-                          <View style={getContainerStyle('password')}>
-                              <Lock size={20} color={activeInput === 'password' ? "#10b981" : "#94a3b8"} style={styles.icon}/>
-                              <TextInput 
-                                  placeholder="••••••••" 
-                                  value={password} 
-                                  onChangeText={setPassword}
-                                  onFocus={() => setActiveInput('password')}
-                                  onBlur={() => setActiveInput(null)}
-                                  secureTextEntry={!showPassword}
-                                  style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
-                                  placeholderTextColor="#cbd5e1"
-                              />
-                              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                                  {showPassword ? <EyeOff size={20} color="#94a3b8"/> : <Eye size={20} color="#94a3b8"/>}
-                              </TouchableOpacity>
-                          </View>
-                      </View>
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>WhatsApp Number</Text>
+                        <View style={getContainerStyle('phone')}>
+                            <Phone size={20} color={activeInput === 'phone' ? "#10b981" : "#94a3b8"} style={styles.icon}/>
+                            <TextInput 
+                                placeholder="080 1234 5678" 
+                                value={phone} 
+                                onChangeText={setPhone} 
+                                onFocus={() => setActiveInput('phone')}
+                                onBlur={() => setActiveInput(null)}
+                                keyboardType="phone-pad"
+                                style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
+                                placeholderTextColor="#cbd5e1"
+                            />
+                        </View>
+                    </View>
 
-                      <TouchableOpacity onPress={handleNextStep} disabled={loading} style={styles.submitBtn}>
-                          {loading ? <ActivityIndicator color="white" /> : <Text style={styles.submitText}>Continue</Text>}
-                      </TouchableOpacity>
-                  </View>
-              )}
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Password</Text>
+                        <View style={getContainerStyle('password')}>
+                            <Lock size={20} color={activeInput === 'password' ? "#10b981" : "#94a3b8"} style={styles.icon}/>
+                            <TextInput 
+                                placeholder="••••••••" 
+                                value={password} 
+                                onChangeText={setPassword}
+                                onFocus={() => setActiveInput('password')}
+                                onBlur={() => setActiveInput(null)}
+                                secureTextEntry={!showPassword}
+                                style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
+                                placeholderTextColor="#cbd5e1"
+                            />
+                            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                                {showPassword ? <EyeOff size={20} color="#94a3b8"/> : <Eye size={20} color="#94a3b8"/>}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
 
-              {/* STEP 2: SECURITY QUESTION */}
-              {step === 2 && (
-                  <View style={styles.stepContainer}>
-                      <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn}>
-                          <Text style={styles.backBtnText}>BACK</Text>
-                      </TouchableOpacity>
+                    <TouchableOpacity onPress={handleNextStep} disabled={loading} style={styles.submitBtn}>
+                        {loading ? <ActivityIndicator color="white" /> : <Text style={styles.submitText}>Continue</Text>}
+                    </TouchableOpacity>
+                </View>
+            )}
 
-                      <View style={styles.securityHeader}>
-                          <View style={styles.iconCircle}><ShieldCheck size={32} color="#059669" /></View>
-                          <Text style={styles.securityTitle}>Secure Your Account</Text>
-                          <Text style={styles.securitySub}>This helps you recover your password if you ever forget it.</Text>
-                      </View>
+            {/* STEP 2: SECURITY QUESTION */}
+            {step === 2 && (
+                <View style={styles.stepContainer}>
+                    <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn}>
+                        <Text style={styles.backBtnText}>BACK</Text>
+                    </TouchableOpacity>
 
-                      <View style={styles.inputGroup}>
-                          <Text style={styles.label}>Select a Question</Text>
-                          <TouchableOpacity onPress={() => setShowQuestionModal(true)} style={styles.questionSelector}>
-                              <Text style={styles.questionSelectorText} numberOfLines={1}>{securityQuestion}</Text>
-                              <ChevronDown size={20} color="#94a3b8" />
-                          </TouchableOpacity>
-                      </View>
+                    <View style={styles.securityHeader}>
+                        <View style={styles.iconCircle}><ShieldCheck size={32} color="#059669" /></View>
+                        <Text style={styles.securityTitle}>Secure Your Account</Text>
+                        <Text style={styles.securitySub}>This helps you recover your password if you ever forget it.</Text>
+                    </View>
 
-                      <View style={styles.inputGroup}>
-                          <Text style={styles.label}>Your Answer</Text>
-                          <View style={getContainerStyle('secAnswer')}>
-                              <TextInput 
-                                  placeholder="Type your answer here..." 
-                                  value={securityAnswer} 
-                                  onChangeText={setSecurityAnswer} 
-                                  onFocus={() => setActiveInput('secAnswer')}
-                                  onBlur={() => setActiveInput(null)}
-                                  style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
-                                  placeholderTextColor="#cbd5e1"
-                              />
-                          </View>
-                      </View>
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Select a Question</Text>
+                        <TouchableOpacity onPress={() => setShowQuestionModal(true)} style={styles.questionSelector}>
+                            <Text style={styles.questionSelectorText} numberOfLines={1}>{securityQuestion}</Text>
+                            <ChevronDown size={20} color="#94a3b8" />
+                        </TouchableOpacity>
+                    </View>
 
-                      <TouchableOpacity onPress={() => handleRegister(false)} disabled={loading} style={styles.submitBtn}>
-                          {loading ? <ActivityIndicator color="white" /> : <Text style={styles.submitText}>Complete Registration</Text>}
-                      </TouchableOpacity>
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Your Answer</Text>
+                        <View style={getContainerStyle('secAnswer')}>
+                            <TextInput 
+                                placeholder="Type your answer here..." 
+                                value={securityAnswer} 
+                                onChangeText={setSecurityAnswer} 
+                                onFocus={() => setActiveInput('secAnswer')}
+                                onBlur={() => setActiveInput(null)}
+                                style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
+                                placeholderTextColor="#cbd5e1"
+                            />
+                        </View>
+                    </View>
 
-                      {/* --- SKIP BUTTON --- */}
-                      <TouchableOpacity onPress={() => handleRegister(true)} disabled={loading} style={styles.skipBtn}>
-                          <Text style={styles.skipBtnText}>Skip for now</Text>
-                      </TouchableOpacity>
-                  </View>
-              )}
+                    <TouchableOpacity onPress={() => handleRegister(false)} disabled={loading} style={styles.submitBtn}>
+                        {loading ? <ActivityIndicator color="white" /> : <Text style={styles.submitText}>Complete Registration</Text>}
+                    </TouchableOpacity>
 
-          </View>
+                    {/* --- SKIP BUTTON --- */}
+                    <TouchableOpacity onPress={() => handleRegister(true)} disabled={loading} style={styles.skipBtn}>
+                        <Text style={styles.skipBtnText}>Skip for now</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
 
-          {step === 1 && (
-              <View style={styles.footerRow}>
-                <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                    <Text style={styles.footerText}>Already have a store? <Text style={styles.footerTextBold}>Sign In</Text></Text>
-                </TouchableOpacity>
-              </View>
-          )}
+        </View>
 
-        </ScrollView>
-      </KeyboardAvoidingView>
+        {step === 1 && (
+            <View style={styles.footerRow}>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                  <Text style={styles.footerText}>Already have a store? <Text style={styles.footerTextBold}>Sign In</Text></Text>
+              </TouchableOpacity>
+            </View>
+        )}
+
+      </ScrollView>
 
       {/* --- QUESTION PICKER MODAL --- */}
       <Modal visible={showQuestionModal} animationType="slide" transparent={true}>

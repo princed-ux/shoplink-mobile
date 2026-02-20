@@ -4,10 +4,10 @@
     "slug": "shoplink-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon-logo.png",
+    "icon": "./assets/favicon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/icon-logo.png",
+      "image": "./assets/favicon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -20,6 +20,7 @@
     },
     "android": {
       "package": "com.shoplink.mobile",
+      "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"

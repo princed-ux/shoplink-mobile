@@ -167,7 +167,8 @@ export default function BrandingScreen({ navigation }) {
   const hasSecurityQuestion = !!user?.vendor?.security_question;
 
   return (
-    <SafeAreaView style={styles.container}>
+    // 1. ADDED edges TO PREVENT THE BOTTOM BOUNCE BUG
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <FallingBackground />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -281,7 +282,8 @@ export default function BrandingScreen({ navigation }) {
                </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.modalScroll}>
+            {/* 2. ADDED keyboardShouldPersistTaps TO THE MODAL SCROLLVIEW */}
+            <ScrollView contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled">
                <Text style={styles.modalTitle}>Security Settings</Text>
                <Text style={styles.modalSubtitle}>Set a recovery question. This is the ONLY way to recover your account if you lose your password.</Text>
                
