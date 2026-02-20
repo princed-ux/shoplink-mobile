@@ -170,7 +170,7 @@ export default function BrandingScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <FallingBackground />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         
         <Text style={styles.pageTitle}>Settings</Text>
 
