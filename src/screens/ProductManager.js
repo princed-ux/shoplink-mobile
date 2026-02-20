@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { 
   View, Text, FlatList, TouchableOpacity, Image, Modal, 
-  TextInput, ActivityIndicator, Platform, ScrollView, Animated, Easing, Dimensions
+  TextInput, ActivityIndicator, Platform, ScrollView, Animated, Easing, Dimensions, StyleSheet
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, Trash2, X, Upload, Tag, FileText, Edit2, Package } from 'lucide-react-native';
@@ -38,24 +38,22 @@ const AuroraBackground = () => {
   const translate2 = blob2.interpolate({ inputRange: [0, 1], outputRange: [0, -40] });
 
   return (
-    <View style={{ position: 'absolute', width: width, height: height, zIndex: -1, backgroundColor: '#f8fafc' }}>
-      <Animated.View style={{ 
-        position: 'absolute', top: 100, left: -50, width: 300, height: 300, 
-        backgroundColor: '#e9d5ff', borderRadius: 150, opacity: 0.5,
-        transform: [{ translateX: translate1 }, { scale: 1.2 }] 
-      }} blurRadius={80} />
-      <Animated.View style={{ 
-        position: 'absolute', bottom: 100, right: -50, width: 280, height: 280, 
-        backgroundColor: '#a7f3d0', borderRadius: 140, opacity: 0.5,
-        transform: [{ translateY: translate2 }, { scale: 1.1 }] 
-      }} blurRadius={80} />
+    <View style={styles.auroraContainer}>
+      <Animated.View style={[
+        styles.blob1,
+        { transform: [{ translateX: translate1 }, { scale: 1.2 }] }
+      ]} blurRadius={80} />
+      <Animated.View style={[
+        styles.blob2,
+        { transform: [{ translateY: translate2 }, { scale: 1.1 }] }
+      ]} blurRadius={80} />
     </View>
   );
 };
 
 export default function ProductManager() {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // <--- Set to true initially so it loads immediately on mount
   const [modalVisible, setModalVisible] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [user, setUser] = useState(null);
@@ -72,12 +70,13 @@ export default function ProductManager() {
   const [image, setImage] = useState(null);
 
   // --- HELPER FOR BORDER COLOR ---
-  const getContainerStyle = (fieldName) => {
+  const getContainerStyle = (fieldName, isTextArea = false) => {
       const isActive = activeInput === fieldName;
-      // If active: White bg + Emerald Border. If inactive: Slate bg + Slate Border
-      return isActive 
-        ? "bg-white border-emerald-500 shadow-sm" 
-        : "bg-slate-50 border-slate-100";
+      return [
+          styles.inputContainer,
+          isTextArea && styles.textAreaContainer,
+          isActive ? styles.inputContainerActive : styles.inputContainerInactive
+      ];
   };
 
   const loadData = async () => {
@@ -91,10 +90,14 @@ export default function ProductManager() {
       const userData = JSON.parse(jsonValue);
       setUser(userData);
 
-      if (userData.vendor?.slug) {
-         const res = await axios.get(`${API_URL}/api/shop/${userData.vendor.slug}`);
-         setProducts(res.data.products || []);
-      }
+      // --- THE FIX: Use the secure /me endpoint instead of the public shop link! ---
+      const res = await axios.get(`${API_URL}/api/vendor/me`, {
+          headers: { Authorization: userData.token }
+      });
+      
+      // Update the products list from the secure response
+      setProducts(res.data.products || []);
+      
     } catch (error) {
       console.error("Load Error:", error);
       Toast.show({ type: 'error', text1: 'Error loading products' });
@@ -170,33 +173,33 @@ export default function ProductManager() {
   const resetForm = () => { setName(''); setPrice(''); setDescription(''); setImage(null); setIsEditing(false); setEditId(null); setActiveInput(null); };
 
   const renderProduct = ({ item }) => (
-    <View className="bg-white p-4 rounded-3xl mb-4 flex-row items-center shadow-sm border border-slate-100 relative overflow-hidden">
-      <Image source={{ uri: item.image_url || 'https://via.placeholder.com/150' }} className="w-24 h-24 rounded-2xl bg-slate-50 mr-4" resizeMode="cover" />
-      <View className="flex-1 py-1">
-        <Text className="font-black text-slate-900 text-lg mb-1 line-clamp-1">{item.name}</Text>
-        <Text className="text-slate-400 text-xs line-clamp-2 mb-2 font-medium">{item.description || "No description provided."}</Text>
-        <View className="bg-emerald-50 self-start px-3 py-1 rounded-lg">
-            <Text className="text-emerald-700 font-black text-sm">₦{parseInt(item.price).toLocaleString()}</Text>
+    <View style={styles.productCard}>
+      <Image source={{ uri: item.image_url || 'https://via.placeholder.com/150' }} style={styles.productImage} resizeMode="cover" />
+      <View style={styles.productInfo}>
+        <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.productDesc} numberOfLines={2}>{item.description || "No description provided."}</Text>
+        <View style={styles.productPriceBadge}>
+            <Text style={styles.productPriceText}>₦{parseInt(item.price).toLocaleString()}</Text>
         </View>
       </View>
-      <View className="flex-col gap-3 ml-2">
-          <TouchableOpacity onPress={() => openEditModal(item)} className="bg-slate-50 p-2.5 rounded-xl border border-slate-100"><Edit2 size={18} color="#334155" /></TouchableOpacity>
-          <TouchableOpacity onPress={() => handleDelete(item.id)} className="bg-red-50 p-2.5 rounded-xl border border-red-100"><Trash2 size={18} color="#ef4444" /></TouchableOpacity>
+      <View style={styles.productActions}>
+          <TouchableOpacity onPress={() => openEditModal(item)} style={styles.actionBtnEdit}><Edit2 size={18} color="#334155" /></TouchableOpacity>
+          <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.actionBtnDelete}><Trash2 size={18} color="#ef4444" /></TouchableOpacity>
       </View>
     </View>
   );
 
   return (
-    <View className="flex-1 bg-slate-50 relative">
+    <View style={styles.mainContainer}>
       <AuroraBackground />
-      <SafeAreaView className="flex-1">
-          <View className="px-6 pt-4 pb-2 flex-row justify-between items-end">
+      <SafeAreaView style={styles.flex1}>
+          <View style={styles.headerContainer}>
             <View>
-              <Text className="text-slate-500 font-bold text-xs uppercase tracking-widest mb-1">Management</Text>
-              <Text className="text-3xl font-black text-slate-900 tracking-tight">Inventory</Text>
+              <Text style={styles.headerSubText}>Management</Text>
+              <Text style={styles.headerTitle}>Inventory</Text>
             </View>
-            <View className="bg-white px-3 py-1.5 rounded-xl border border-slate-100 shadow-sm mb-1">
-               <Text className="text-slate-900 font-bold text-xs">{products.length} Items</Text>
+            <View style={styles.headerBadge}>
+               <Text style={styles.headerBadgeText}>{products.length} Items</Text>
             </View>
           </View>
 
@@ -204,67 +207,76 @@ export default function ProductManager() {
             data={products}
             keyExtractor={(item) => item.id.toString()}
             renderItem={renderProduct}
-            contentContainerStyle={{ padding: 24, paddingBottom: 100 }}
-            refreshing={loading}
+            contentContainerStyle={styles.listContent}
+            refreshing={loading && products.length > 0} // Only show top spinner if pulling to refresh existing list
             onRefresh={loadData}
-            ListEmptyComponent={!loading && (
-                <View className="items-center justify-center mt-20 opacity-80">
-                  <View className="bg-white w-32 h-32 rounded-full items-center justify-center mb-6 shadow-sm border border-slate-100"><Package size={50} color="#cbd5e1" /></View>
-                  <Text className="text-slate-900 font-black text-xl mb-2">Shelf is Empty</Text>
-                  <Text className="text-slate-400 text-sm text-center px-10 leading-6 font-medium">Add your first product to start sharing your store link.</Text>
-                </View>
-            )}
+            ListEmptyComponent={
+                loading ? (
+                    // --- LOADING STATE ---
+                    <View style={styles.emptyContainer}>
+                        <ActivityIndicator size="large" color="#059669" style={{ marginBottom: 24, transform: [{ scale: 1.5 }] }} />
+                        <Text style={styles.emptyTitle}>Loading Inventory...</Text>
+                        <Text style={styles.emptyDesc}>Please wait while we arrange your shelf.</Text>
+                    </View>
+                ) : (
+                    // --- EMPTY SHELF STATE ---
+                    <View style={styles.emptyContainer}>
+                        <View style={styles.emptyIconBox}><Package size={50} color="#cbd5e1" /></View>
+                        <Text style={styles.emptyTitle}>Shelf is Empty</Text>
+                        <Text style={styles.emptyDesc}>Add your first product to start sharing your store link.</Text>
+                    </View>
+                )
+            }
           />
 
-          <TouchableOpacity onPress={() => { resetForm(); setModalVisible(true); }} className="absolute bottom-8 right-6 bg-slate-900 w-16 h-16 rounded-full items-center justify-center shadow-2xl shadow-slate-400 z-50 active:scale-95">
+          <TouchableOpacity onPress={() => { resetForm(); setModalVisible(true); }} style={styles.fab}>
             <Plus size={32} color="white" />
           </TouchableOpacity>
       </SafeAreaView>
 
       {/* --- ADD/EDIT PRODUCT MODAL --- */}
       <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet">
-        <View className="flex-1 bg-white">
-          <View className="px-6 py-4 flex-row justify-between items-center bg-white border-b border-slate-100">
-             <Text className="text-xl font-black text-slate-900">{isEditing ? 'Edit Item' : 'New Item'}</Text>
-             <TouchableOpacity onPress={() => setModalVisible(false)} className="bg-slate-50 p-2 rounded-full"><X size={20} color="#64748b" /></TouchableOpacity>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+             <Text style={styles.modalTitle}>{isEditing ? 'Edit Item' : 'New Item'}</Text>
+             <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalCloseBtn}><X size={20} color="#64748b" /></TouchableOpacity>
           </View>
 
-          <ScrollView className="p-6">
-             <TouchableOpacity onPress={pickImage} className="h-64 bg-slate-50 rounded-[32px] items-center justify-center mb-8 border-2 border-dashed border-slate-200 overflow-hidden active:bg-slate-100">
-                {image ? <Image source={{ uri: image }} className="w-full h-full" resizeMode="cover" /> : (
-                  <View className="items-center">
-                    <View className="bg-white w-16 h-16 rounded-full items-center justify-center mb-3 shadow-sm border border-slate-100"><Upload size={24} color="#059669"/></View>
-                    <Text className="text-slate-900 font-black text-lg">Upload Image</Text>
-                    <Text className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Tap to select</Text>
+          <ScrollView style={styles.flex1} contentContainerStyle={styles.modalScroll}>
+             <TouchableOpacity onPress={pickImage} style={styles.imagePickerBox}>
+                {image ? <Image source={{ uri: image }} style={styles.imageFull} resizeMode="cover" /> : (
+                  <View style={{ alignItems: 'center' }}>
+                    <View style={styles.imageIconBox}><Upload size={24} color="#059669"/></View>
+                    <Text style={styles.imagePickerTitle}>Upload Image</Text>
+                    <Text style={styles.imagePickerSub}>Tap to select</Text>
                   </View>
                 )}
              </TouchableOpacity>
 
-             <View className="space-y-5 mb-10">
+             <View style={styles.formGroup}>
                  
                  {/* NAME INPUT */}
-                 <View>
-                    <Text className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Product Name</Text>
-                    <View className={`border-2 rounded-2xl flex-row items-center h-16 px-4 transition-all ${getContainerStyle('name')}`}>
-                        <Tag size={20} color={activeInput === 'name' ? "#10b981" : "#94a3b8"} className="mr-3" />
+                 <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Product Name</Text>
+                    <View style={getContainerStyle('name')}>
+                        <Tag size={20} color={activeInput === 'name' ? "#10b981" : "#94a3b8"} style={styles.inputIcon} />
                         <TextInput 
                           placeholder="e.g. Nike Air Max" 
                           value={name} 
                           onChangeText={setName} 
                           onFocus={() => setActiveInput('name')}
                           onBlur={() => setActiveInput(null)}
-                          className="flex-1 font-bold text-slate-900 text-lg"
+                          style={Platform.OS === 'web' ? [styles.inputText, { outlineStyle: 'none' }] : styles.inputText}
                           placeholderTextColor="#cbd5e1"
-                          style={Platform.OS === 'web' ? { outlineStyle: 'none' } : undefined} // <--- FIX FOR ORANGE BORDER
                         />
                     </View>
                  </View>
 
                  {/* PRICE INPUT */}
-                 <View>
-                    <Text className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Price (₦)</Text>
-                    <View className={`border-2 rounded-2xl flex-row items-center h-16 px-4 transition-all ${getContainerStyle('price')}`}>
-                        <Text className={`text-lg font-bold mr-3 ${activeInput === 'price' ? "text-emerald-500" : "text-slate-400"}`}>₦</Text>
+                 <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Price (₦)</Text>
+                    <View style={getContainerStyle('price')}>
+                        <Text style={[styles.priceSymbol, activeInput === 'price' ? styles.priceSymbolActive : styles.priceSymbolInactive]}>₦</Text>
                         <TextInput 
                           placeholder="0.00" 
                           value={price} 
@@ -272,18 +284,17 @@ export default function ProductManager() {
                           onFocus={() => setActiveInput('price')}
                           onBlur={() => setActiveInput(null)}
                           keyboardType="numeric"
-                          className="flex-1 font-bold text-slate-900 text-lg"
+                          style={Platform.OS === 'web' ? [styles.inputText, { outlineStyle: 'none' }] : styles.inputText}
                           placeholderTextColor="#cbd5e1"
-                          style={Platform.OS === 'web' ? { outlineStyle: 'none' } : undefined} // <--- FIX FOR ORANGE BORDER
                         />
                     </View>
                  </View>
 
                  {/* DESCRIPTION INPUT */}
-                 <View>
-                    <Text className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Details</Text>
-                    <View className={`border-2 rounded-2xl flex-row items-start p-4 h-32 transition-all ${getContainerStyle('desc')}`}>
-                        <FileText size={20} color={activeInput === 'desc' ? "#10b981" : "#94a3b8"} className="mr-3 mt-1" />
+                 <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Details</Text>
+                    <View style={getContainerStyle('desc', true)}>
+                        <FileText size={20} color={activeInput === 'desc' ? "#10b981" : "#94a3b8"} style={styles.textAreaIcon} />
                         <TextInput 
                           placeholder="Describe your product..." 
                           value={description} 
@@ -291,17 +302,16 @@ export default function ProductManager() {
                           onFocus={() => setActiveInput('desc')}
                           onBlur={() => setActiveInput(null)}
                           multiline
-                          className="flex-1 font-bold text-slate-900 text-base leading-6"
                           textAlignVertical="top"
+                          style={Platform.OS === 'web' ? [styles.textAreaInput, { outlineStyle: 'none' }] : styles.textAreaInput}
                           placeholderTextColor="#cbd5e1"
-                          style={Platform.OS === 'web' ? { outlineStyle: 'none' } : undefined} // <--- FIX FOR ORANGE BORDER
                         />
                     </View>
                  </View>
              </View>
 
-             <TouchableOpacity onPress={handleSubmit} disabled={uploading} className="bg-emerald-600 h-16 rounded-2xl items-center justify-center shadow-lg shadow-emerald-200 mb-10 active:scale-[0.98]">
-               {uploading ? <ActivityIndicator color="white" /> : <Text className="text-white font-black text-lg tracking-widest uppercase">{isEditing ? 'Save Changes' : 'Add to Inventory'}</Text>}
+             <TouchableOpacity onPress={handleSubmit} disabled={uploading} style={styles.submitBtn}>
+               {uploading ? <ActivityIndicator color="white" /> : <Text style={styles.submitBtnText}>{isEditing ? 'Save Changes' : 'Add to Inventory'}</Text>}
              </TouchableOpacity>
 
           </ScrollView>
@@ -310,3 +320,86 @@ export default function ProductManager() {
     </View>
   );
 }
+
+// ==========================================
+// STANDARD STYLES
+// ==========================================
+const styles = StyleSheet.create({
+    // Globals
+    flex1: { flex: 1 },
+    mainContainer: { flex: 1, backgroundColor: '#f8fafc', position: 'relative' },
+    
+    // Aurora Background
+    auroraContainer: { position: 'absolute', width: width, height: height, zIndex: -1, backgroundColor: '#f8fafc' },
+    blob1: { position: 'absolute', top: 100, left: -50, width: 300, height: 300, backgroundColor: '#e9d5ff', borderRadius: 150, opacity: 0.5 },
+    blob2: { position: 'absolute', bottom: 100, right: -50, width: 280, height: 280, backgroundColor: '#a7f3d0', borderRadius: 140, opacity: 0.5 },
+
+    // Header
+    headerContainer: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+    headerSubText: { color: '#64748b', fontWeight: 'bold', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
+    headerTitle: { fontSize: 30, fontWeight: '900', color: '#0f172a', letterSpacing: -0.5 },
+    headerBadge: { backgroundColor: '#ffffff', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: '#f1f5f9', shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2, marginBottom: 4 },
+    headerBadgeText: { color: '#0f172a', fontWeight: 'bold', fontSize: 12 },
+
+    // FlatList
+    listContent: { padding: 24, paddingBottom: 180 }, // <--- Fixed for floating tab bar
+    
+    // Empty State (Used for both Loading and Empty)
+    emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 80, opacity: 0.8 },
+    emptyIconBox: { backgroundColor: '#ffffff', width: 128, height: 128, borderRadius: 64, alignItems: 'center', justifyContent: 'center', marginBottom: 24, shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2, borderWidth: 1, borderColor: '#f1f5f9' },
+    emptyTitle: { color: '#0f172a', fontWeight: '900', fontSize: 20, marginBottom: 8 },
+    emptyDesc: { color: '#94a3b8', fontSize: 14, textAlign: 'center', paddingHorizontal: 40, lineHeight: 24, fontWeight: '500' },
+
+    // Product Card
+    productCard: { backgroundColor: '#ffffff', padding: 16, borderRadius: 24, marginBottom: 16, flexDirection: 'row', alignItems: 'center', shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2, borderWidth: 1, borderColor: '#f1f5f9', overflow: 'hidden' },
+    productImage: { width: 96, height: 96, borderRadius: 16, backgroundColor: '#f8fafc', marginRight: 16 },
+    productInfo: { flex: 1, paddingVertical: 4 },
+    productName: { fontWeight: '900', color: '#0f172a', fontSize: 18, marginBottom: 4 },
+    productDesc: { color: '#94a3b8', fontSize: 12, marginBottom: 8, fontWeight: '500' },
+    productPriceBadge: { backgroundColor: '#ecfdf5', alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
+    productPriceText: { color: '#047857', fontWeight: '900', fontSize: 14 },
+    productActions: { flexDirection: 'column', gap: 12, marginLeft: 8 },
+    actionBtnEdit: { backgroundColor: '#f8fafc', padding: 10, borderRadius: 12, borderWidth: 1, borderColor: '#f1f5f9' },
+    actionBtnDelete: { backgroundColor: '#fef2f2', padding: 10, borderRadius: 12, borderWidth: 1, borderColor: '#fee2e2' },
+
+    // Floating Action Button (FAB)
+    fab: { position: 'absolute', bottom: 120, right: 24, backgroundColor: '#0f172a', width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 15, elevation: 10, zIndex: 50 }, // <--- Fixed for floating tab bar
+
+    // Modal Global
+    modalContainer: { flex: 1, backgroundColor: '#ffffff' },
+    modalHeader: { paddingHorizontal: 24, paddingVertical: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+    modalTitle: { fontSize: 20, fontWeight: '900', color: '#0f172a' },
+    modalCloseBtn: { backgroundColor: '#f8fafc', padding: 8, borderRadius: 20 },
+    modalScroll: { padding: 24 },
+
+    // Image Picker
+    imagePickerBox: { height: 256, backgroundColor: '#f8fafc', borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 32, borderWidth: 2, borderStyle: 'dashed', borderColor: '#e2e8f0', overflow: 'hidden' },
+    imageFull: { width: '100%', height: '100%' },
+    imageIconBox: { backgroundColor: '#ffffff', width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 12, shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2, borderWidth: 1, borderColor: '#f1f5f9' },
+    imagePickerTitle: { color: '#0f172a', fontWeight: '900', fontSize: 18 },
+    imagePickerSub: { color: '#94a3b8', fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1, marginTop: 4 },
+
+    // Form Inputs
+    formGroup: { marginBottom: 40, gap: 20 },
+    inputGroup: { flex: 1 },
+    inputLabel: { fontSize: 12, fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, marginLeft: 4 },
+    
+    // Dynamic Input Containers
+    inputContainer: { borderWidth: 2, borderRadius: 16, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, height: 64 },
+    textAreaContainer: { height: 128, alignItems: 'flex-start', paddingTop: 16, paddingBottom: 16 },
+    inputContainerActive: { backgroundColor: '#ffffff', borderColor: '#10b981', shadowColor: '#10b981', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+    inputContainerInactive: { backgroundColor: '#f8fafc', borderColor: '#f1f5f9' },
+    
+    inputIcon: { marginRight: 12 },
+    textAreaIcon: { marginRight: 12, marginTop: 4 },
+    inputText: { flex: 1, fontWeight: 'bold', color: '#0f172a', fontSize: 18 },
+    textAreaInput: { flex: 1, fontWeight: 'bold', color: '#0f172a', fontSize: 16, lineHeight: 24, minHeight: 96 },
+    
+    priceSymbol: { fontSize: 18, fontWeight: 'bold', marginRight: 12 },
+    priceSymbolActive: { color: '#10b981' },
+    priceSymbolInactive: { color: '#94a3b8' },
+
+    // Submit Button
+    submitBtn: { backgroundColor: '#059669', height: 64, borderRadius: 16, alignItems: 'center', justifyContent: 'center', shadowColor: '#a7f3d0', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 10, marginBottom: 40 },
+    submitBtnText: { color: '#ffffff', fontWeight: '900', fontSize: 18, letterSpacing: 1, textTransform: 'uppercase' }
+});

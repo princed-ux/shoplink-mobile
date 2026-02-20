@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "ShopLinkvi",
-    "slug": "shoplink-mobile", 
+    "slug": "shoplink-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/main-logo.png",
@@ -19,11 +19,11 @@
       }
     },
     "android": {
+      "package": "com.shoplink.mobile",
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo.png",
         "backgroundColor": "#ffffff"
-      },
-      "package": "com.shoplink.mobile"
+      }
     },
     "web": {
       "favicon": "./assets/logo.png",

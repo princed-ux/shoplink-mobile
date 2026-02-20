@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { 
   View, Text, ScrollView, TouchableOpacity, Image, Share, 
-  RefreshControl, Platform, Modal, Animated, Easing, Dimensions, StatusBar, ActivityIndicator
+  RefreshControl, Platform, Modal, Animated, Easing, Dimensions, StatusBar, ActivityIndicator, StyleSheet
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
@@ -47,19 +47,16 @@ const AuroraBackground = () => {
   const translate1 = blob1.interpolate({ inputRange: [0, 1], outputRange: [0, 30] });
   const translate2 = blob2.interpolate({ inputRange: [0, 1], outputRange: [0, -40] });
 
-  
   return (
-    <View style={{ position: 'absolute', width: width, height: height, zIndex: -1, backgroundColor: '#f8fafc' }}>
-      <Animated.View style={{ 
-        position: 'absolute', top: -50, left: -50, width: 300, height: 300, 
-        backgroundColor: '#e9d5ff', borderRadius: 150, opacity: 0.5,
-        transform: [{ translateX: translate1 }, { scale: 1.2 }] 
-      }} blurRadius={80} />
-      <Animated.View style={{ 
-        position: 'absolute', top: 50, right: -50, width: 280, height: 280, 
-        backgroundColor: '#a7f3d0', borderRadius: 140, opacity: 0.5,
-        transform: [{ translateY: translate2 }, { scale: 1.1 }] 
-      }} blurRadius={80} />
+    <View style={styles.auroraContainer}>
+      <Animated.View style={[
+        styles.blob1,
+        { transform: [{ translateX: translate1 }, { scale: 1.2 }] }
+      ]} blurRadius={80} />
+      <Animated.View style={[
+        styles.blob2,
+        { transform: [{ translateY: translate2 }, { scale: 1.1 }] }
+      ]} blurRadius={80} />
     </View>
   );
 };
@@ -148,9 +145,6 @@ export default function DashboardScreen({ navigation }) {
 
   const onRefresh = useCallback(async () => { setRefreshing(true); await loadData(); setTimeout(() => setRefreshing(false), 1000); }, []);
 
-  // --- ACTIONS ---
-  
-
   // --- WEB ONLY: Handle Redirect Back from Paystack ---
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -158,37 +152,31 @@ export default function DashboardScreen({ navigation }) {
         const reference = params.get('reference');
         
         if (reference) {
-            // Clean the URL so we don't verify twice if you refresh
             window.history.replaceState({}, document.title, window.location.pathname);
-            // Verify the payment immediately
             verifyPayment(reference);
         }
     }
   }, []);
+
   // --- ACTIONS ---
-  
-  // 1. Initialize Paystack (Fixed Redirects)
   const handleUpgrade = async (plan) => {
     try {
-       // A. Determine Redirect URL
-       let callbackUrl = "https://standard.paystack.co/close"; // Default for Mobile WebView detection
+       let callbackUrl = "https://standard.paystack.co/close"; 
        if (Platform.OS === 'web') {
-           callbackUrl = window.location.href; // Web: Come back to this exact page
+           callbackUrl = window.location.href; 
        }
 
        const res = await axios.post(`${API_URL}/api/paystack/initialize`, {
          email: `${user.phone}@shoplink.vi`,
          amount: plan.amount,
-         callback_url: callbackUrl, // <--- SENDING THE LINK
+         callback_url: callbackUrl,
          metadata: { vendorId: user.id, phone: user.phone, plan: plan.name }
        }, { headers: { Authorization: user.token } });
 
        if (res.data.status && res.data.data.authorization_url) {
            if (Platform.OS === 'web') {
-               // WEB: Go to Paystack (It will auto-redirect back now!)
                window.location.href = res.data.data.authorization_url;
            } else {
-               // MOBILE: Open In-App WebView
                setPaystackUrl(res.data.data.authorization_url);
                setShowUpgradeModal(false);
            }
@@ -201,29 +189,21 @@ export default function DashboardScreen({ navigation }) {
     }
   };
 
-  // 2. Mobile WebView Handler (Watches for Success)
   const handleWebViewNavigation = (navState) => {
       const { url } = navState;
-      
-      // Paystack redirects to the callback_url with "?reference=..." or "&reference=..."
-      // We watch for that reference code.
       if ((url.includes('reference=') || url.includes('close')) && !verifyingPayment) {
-          
-          // Try to get reference from URL
           const match = url.match(/reference=([^&]*)/);
           const reference = match ? match[1] : null;
 
           if (reference) {
-              setPaystackUrl(null); // Close the Modal immediately
-              verifyPayment(reference); // Check with backend
+              setPaystackUrl(null); 
+              verifyPayment(reference); 
           } else {
-              // If we hit the close URL but no reference found yet (rare), just close
               setPaystackUrl(null);
           }
       }
   };
 
-  // 3. Verify Payment
   const verifyPayment = async (reference) => {
       setVerifyingPayment(true);
       try {
@@ -254,136 +234,150 @@ export default function DashboardScreen({ navigation }) {
      Toast.show({ type: 'success', text1: 'Link Copied!' });
   };
 
-  if (!user) return <SafeAreaView className="flex-1 justify-center items-center bg-white"><Text className="text-slate-400 font-bold">Loading Store...</Text></SafeAreaView>;
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Loading Store...</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <View className="flex-1 bg-slate-50 relative">
+    <View style={styles.mainContainer}>
       <StatusBar barStyle="dark-content" />
       
       {isElitePlan && <AuroraBackground />}
 
-      <SafeAreaView className="flex-1">
-        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} showsVerticalScrollIndicator={false}>
+      <SafeAreaView style={styles.flex1}>
+        <ScrollView 
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} 
+          showsVerticalScrollIndicator={false}
+        >
           
           {/* HEADER */}
-          <View className="px-6 pt-2 pb-6 flex-row justify-between items-center">
+          <View style={styles.headerRow}>
             <View>
-              <Text className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-0.5">{greeting}</Text>
-              <View className="flex-row items-center">
-                <Text className="text-2xl font-black text-slate-900 capitalize mr-1 tracking-tight">{user.shopName}</Text>
-                {user.is_pro && <Check size={16} color="#3b82f6" fill="#3b82f6" />}
+              <Text style={styles.greetingText}>{greeting}</Text>
+              <View style={styles.shopNameRow}>
+                <Text style={styles.shopNameText}>{user.shopName}</Text>
+                {user.is_pro && <Check size={16} color="#3b82f6" />}
               </View>
             </View>
             
             <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
                 {user.logo ? (
-                    <Image source={{ uri: user.logo }} className="w-12 h-12 rounded-full border-2 border-white shadow-sm" />
+                    <Image source={{ uri: user.logo }} style={styles.avatarImage} />
                 ) : (
-                    <View className="w-12 h-12 bg-slate-900 rounded-full items-center justify-center border-2 border-white shadow-sm">
-                        <Text className="text-white font-black text-lg">{user.shopName?.charAt(0)}</Text>
+                    <View style={styles.avatarFallback}>
+                        <Text style={styles.avatarFallbackText}>{user.shopName?.charAt(0)}</Text>
                     </View>
                 )}
             </TouchableOpacity>
           </View>
 
-          <View className="px-6 pb-20 gap-y-6">
+          <View style={styles.contentPadding}>
 
               {/* CARD 1: SHOP LINK */}
-              <View className="rounded-[32px] overflow-hidden shadow-xl shadow-slate-300">
-                <LinearGradient colors={['#0f172a', '#334155']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} className="p-6 h-48 justify-between">
-                   <View className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/20 rounded-full blur-2xl" />
+              <View style={[styles.cardOuter, styles.shadowLg]}>
+                <LinearGradient colors={['#0f172a', '#334155']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradientCard}>
+                   <View style={styles.gradientGlow} />
                    <View>
-                      <View className="flex-row items-center gap-2 mb-2">
-                         <View className="w-2 h-2 rounded-full bg-emerald-400" />
-                         <Text className="text-emerald-300 text-[10px] font-bold uppercase tracking-widest">Live Store</Text>
+                      <View style={styles.liveBadgeRow}>
+                         <View style={styles.liveDot} />
+                         <Text style={styles.liveText}>Live Store</Text>
                       </View>
-                      <Text className="text-white text-3xl font-black tracking-tighter">Your Shop Link</Text>
+                      <Text style={styles.linkTitle}>Your Shop Link</Text>
                    </View>
-                   <View className="flex-row items-center bg-white/10 p-1.5 pl-4 rounded-xl border border-white/10 backdrop-blur-md">
-                      <Text className="text-emerald-300 font-mono text-xs flex-1 truncate mr-2">shop.vi/{user.slug}</Text>
-                      <TouchableOpacity onPress={copySlug} className="bg-white px-4 py-2 rounded-lg active:bg-emerald-50">
-                          <Text className="text-slate-900 text-[10px] font-black uppercase tracking-widest">Copy</Text>
+                   <View style={styles.linkUrlBox}>
+                      <Text style={styles.linkUrlText} numberOfLines={1}>shop.vi/{user.slug}</Text>
+                      <TouchableOpacity onPress={copySlug} style={styles.copyButton}>
+                          <Text style={styles.copyButtonText}>Copy</Text>
                       </TouchableOpacity>
                    </View>
                 </LinearGradient>
               </View>
 
               {/* CARD 2: STATUS */}
-              <TouchableOpacity onPress={() => setShowUpgradeModal(true)} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm flex-row justify-between items-center relative overflow-hidden">
-                 <View className="z-10 flex-1">
-                    <View className="w-10 h-10 bg-slate-900 rounded-xl items-center justify-center mb-3 shadow-md">
-                        <Zap size={20} color="white" fill="white" />
+              <TouchableOpacity onPress={() => setShowUpgradeModal(true)} style={[styles.card, styles.shadowSm, styles.flexRowBetween]}>
+                 <View style={styles.flex1}>
+                    <View style={styles.iconBoxDark}>
+                        <Zap size={20} color="white" />
                     </View>
-                    <Text className="text-xl font-black text-slate-900 capitalize">{activeAccessLevel} Plan</Text>
+                    <Text style={styles.planTitleText}>{activeAccessLevel} Plan</Text>
+                    
                     {isTrialDateValid && activeAccessLevel !== 'Unlimited' ? (
-                        <View className="mt-2 bg-amber-50 px-3 py-1 rounded-lg w-fit self-start border border-amber-100">
-                           <Text className="text-amber-700 text-[10px] font-bold uppercase">{timeLeft.d} Days Left in Trial</Text>
+                        <View style={styles.trialPill}>
+                           <Text style={styles.trialPillText}>{timeLeft.d} Days Left in Trial</Text>
                         </View>
                     ) : (
-                        <View className="mt-4 w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                           <View className="h-full bg-slate-900" style={{ width: currentPlan === 'Unlimited' ? '100%' : `${(usageCount/planLimit)*100}%` }} />
+                        <View style={styles.progressBarBg}>
+                           <View style={[styles.progressBarFill, { width: currentPlan === 'Unlimited' ? '100%' : `${(usageCount/planLimit)*100}%` }]} />
                         </View>
                     )}
-                    {!isTrialDateValid && <Text className="text-slate-400 text-[10px] font-bold mt-2">{usageCount} / {planLimit} Items Used</Text>}
+                    {!isTrialDateValid && <Text style={styles.usageText}>{usageCount} / {planLimit} Items Used</Text>}
                  </View>
+                 
                  {isTrialDateValid && (
-                    <View className="items-center justify-center">
-                       <View className="w-20 h-20 border-4 border-slate-100 rounded-full items-center justify-center">
-                          <Text className="text-2xl font-black text-slate-900">{timeLeft.d}</Text>
-                          <Text className="text-[8px] font-bold uppercase text-slate-400">Days</Text>
+                    <View style={styles.timerCircleOuter}>
+                       <View style={styles.timerCircleInner}>
+                          <Text style={styles.timerNumber}>{timeLeft.d}</Text>
+                          <Text style={styles.timerLabel}>Days</Text>
                        </View>
                     </View>
                  )}
               </TouchableOpacity>
 
               {/* CARD 3: TOTAL VIEWS */}
-              <View className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm relative overflow-hidden">
-                  <View className="flex-row justify-between items-start mb-2">
-                      <Text className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Total Store Views</Text>
-                      <TouchableOpacity onPress={refreshViewsOnly} disabled={loadingViews} className="bg-blue-50 px-2 py-1 rounded-md flex-row items-center gap-1">
-                         <RotateCw size={10} color="#2563eb" className={loadingViews ? "animate-spin" : ""} />
-                         <Text className="text-blue-600 text-[9px] font-bold">{loadingViews ? "Updating" : "Refresh"}</Text>
+              <View style={[styles.cardLarge, styles.shadowSm]}>
+                  <View style={styles.viewsHeaderRow}>
+                      <Text style={styles.viewsHeaderLabel}>Total Store Views</Text>
+                      <TouchableOpacity onPress={refreshViewsOnly} disabled={loadingViews} style={styles.refreshBtn}>
+                         <Animated.View style={loadingViews ? styles.spinAnimation : {}}>
+                            <RotateCw size={10} color="#2563eb" />
+                         </Animated.View>
+                         <Text style={styles.refreshBtnText}>{loadingViews ? "Updating" : "Refresh"}</Text>
                       </TouchableOpacity>
                   </View>
-                  <Text className="text-5xl font-black text-slate-900 tracking-tighter mb-6">{user.views?.toLocaleString() || 0}</Text>
-                  <View className="flex-row items-end h-16 gap-1.5 opacity-80">
-                      <View className="flex-1 bg-blue-100 rounded-t-sm h-[30%]" />
-                      <View className="flex-1 bg-blue-200 rounded-t-sm h-[50%]" />
-                      <View className="flex-1 bg-blue-300 rounded-t-sm h-[40%]" />
-                      <View className="flex-1 bg-blue-400 rounded-t-sm h-[70%]" />
-                      <View className="flex-1 bg-blue-500 rounded-t-sm h-[55%]" />
-                      <View className="flex-1 bg-blue-600 rounded-t-sm h-[100%] shadow-lg shadow-blue-200" />
+                  <Text style={styles.viewsNumberText}>{user.views?.toLocaleString() || 0}</Text>
+                  
+                  <View style={styles.chartRow}>
+                      <View style={[styles.chartBar, styles.chartBar1]} />
+                      <View style={[styles.chartBar, styles.chartBar2]} />
+                      <View style={[styles.chartBar, styles.chartBar3]} />
+                      <View style={[styles.chartBar, styles.chartBar4]} />
+                      <View style={[styles.chartBar, styles.chartBar5]} />
+                      <View style={[styles.chartBar, styles.chartBar6, styles.chartBarShadow]} />
                   </View>
               </View>
 
               {/* CARD 4 & 5: SPLIT ROW */}
-              <View className="flex-row gap-4">
-                  <TouchableOpacity onPress={() => navigation.navigate('Inventory')} className="flex-1 bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm justify-between min-h-[160px]">
-                     <View className="items-end opacity-10"><ShoppingBag size={40} color="black" /></View>
+              <View style={styles.splitRow}>
+                  <TouchableOpacity onPress={() => navigation.navigate('Inventory')} style={[styles.splitCard, styles.shadowSm]}>
+                     <View style={styles.bgIconBox}><ShoppingBag size={40} color="black" /></View>
                      <View>
-                        <Text className="text-4xl font-black text-slate-900">{usageCount}</Text>
-                        <Text className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Inventory</Text>
+                        <Text style={styles.splitCardNumber}>{usageCount}</Text>
+                        <Text style={styles.splitCardLabel}>Inventory</Text>
                      </View>
-                     <View className="flex-row items-center mt-2">
-                        <Text className="text-emerald-600 text-[10px] font-black uppercase">Manage</Text>
+                     <View style={styles.manageRow}>
+                        <Text style={styles.manageText}>Manage</Text>
                         <ChevronRight size={12} color="#059669" />
                      </View>
                   </TouchableOpacity>
 
-                  <View className="flex-1 bg-emerald-600 p-6 rounded-[32px] shadow-lg shadow-emerald-200 justify-between min-h-[160px] relative overflow-hidden">
-                     <View className="bg-white/20 w-8 h-8 rounded-lg items-center justify-center backdrop-blur-sm"><MessageCircle size={16} color="white" /></View>
-                     <View className="z-10">
-                        <Text className="text-white font-black text-lg leading-5 mb-1">WhatsApp Checkout</Text>
-                        <View className="bg-black/10 px-2 py-1 rounded-md self-start"><Text className="text-white/80 text-[8px] font-bold uppercase">Active</Text></View>
+                  <View style={[styles.splitCardGreen, styles.shadowGreen]}>
+                     <View style={styles.glassIconBox}><MessageCircle size={16} color="white" /></View>
+                     <View style={styles.z10}>
+                        <Text style={styles.whatsappCardTitle}>WhatsApp Checkout</Text>
+                        <View style={styles.activePill}><Text style={styles.activePillText}>Active</Text></View>
                      </View>
-                     <Globe size={80} color="white" className="absolute -bottom-6 -right-6 opacity-10" />
+                     <Globe size={80} color="white" style={styles.bgGlobeIcon} />
                   </View>
               </View>
 
               {/* ACTION: SHARE BUTTON */}
-              <TouchableOpacity onPress={handleShare} className="bg-slate-900 p-4 rounded-2xl flex-row items-center justify-center shadow-lg mb-4">
-                  <Share2 size={18} color="white" className="mr-2"/>
-                  <Text className="text-white font-bold uppercase tracking-widest">Share My Store</Text>
+              <TouchableOpacity onPress={handleShare} style={styles.shareBtn}>
+                  <Share2 size={18} color="white" style={{ marginRight: 8 }}/>
+                  <Text style={styles.shareBtnText}>Share My Store</Text>
               </TouchableOpacity>
 
           </View>
@@ -392,30 +386,54 @@ export default function DashboardScreen({ navigation }) {
 
       {/* --- UPGRADE MODAL --- */}
       <Modal visible={showUpgradeModal} animationType="slide" presentationStyle="pageSheet">
-         <View className="flex-1 bg-white">
-            <View className="px-6 py-4 border-b border-slate-100 flex-row justify-between items-center bg-white z-10">
-               <Text className="font-black text-lg text-slate-900">Manage Plan</Text>
-               <TouchableOpacity onPress={() => setShowUpgradeModal(false)} className="bg-slate-100 p-2 rounded-full"><Text className="font-bold text-slate-500 text-xs">CLOSE</Text></TouchableOpacity>
+         <View style={styles.flex1BgWhite}>
+            <View style={styles.modalHeader}>
+               <Text style={styles.modalTitle}>Manage Plan</Text>
+               <TouchableOpacity onPress={() => setShowUpgradeModal(false)} style={styles.closeBtn}>
+                   <Text style={styles.closeBtnText}>CLOSE</Text>
+               </TouchableOpacity>
             </View>
-            <ScrollView className="px-6 pb-20 pt-6">
-               <View className="items-center mb-8">
-                  <View className="bg-slate-50 p-4 rounded-full mb-4 border border-slate-100 shadow-sm"><Crown size={40} color={isElitePlan ? "#f59e0b" : "#cbd5e1"} fill={isElitePlan ? "#f59e0b" : "none"} /></View>
-                  <Text className="text-3xl font-black text-slate-900 text-center capitalize mb-1">{activeAccessLevel} Plan</Text>
-                  {isTrialDateValid && activeAccessLevel !== 'Unlimited' && (<View className="bg-emerald-100 px-4 py-1 rounded-full mt-2"><Text className="text-emerald-800 font-bold text-xs">{timeLeft.d} days remaining in trial</Text></View>)}
+            <ScrollView contentContainerStyle={styles.modalScrollContent}>
+               <View style={styles.modalHero}>
+                  <View style={[styles.modalCrownBox, styles.shadowSm]}>
+                      <Crown size={40} color={isElitePlan ? "#f59e0b" : "#cbd5e1"} />
+                  </View>
+                  <Text style={styles.modalHeroTitle}>{activeAccessLevel} Plan</Text>
+                  {isTrialDateValid && activeAccessLevel !== 'Unlimited' && (
+                      <View style={styles.modalTrialPill}>
+                          <Text style={styles.modalTrialText}>{timeLeft.d} days remaining in trial</Text>
+                      </View>
+                  )}
                </View>
-               <View className="gap-y-6">
+               
+               <View style={styles.planList}>
                  {PLANS.map((plan, i) => {
                    const isActive = user.planType === plan.name;
                    const isQueued = queuedPlan === plan.name;
+                   const cardActiveStyle = isActive || isQueued ? styles.planCardActive : styles.planCardInactive;
+                   
                    return (
-                     <TouchableOpacity key={i} onPress={() => handleUpgrade(plan)} disabled={isActive} className={`border-2 rounded-3xl p-5 relative ${isActive || isQueued ? 'bg-white border-emerald-500 shadow-lg shadow-emerald-100' : 'bg-white border-slate-100'}`}>
-                        {plan.isBest && <View className="absolute -top-3 right-6 bg-emerald-500 px-3 py-1 rounded-full"><Text className="text-white text-[10px] font-black uppercase">Most Popular</Text></View>}
-                        <View className="flex-row justify-between items-center mb-4">
-                           <View><Text className="text-slate-400 font-black text-xs uppercase tracking-widest mb-1">{plan.name}</Text><Text className="text-3xl font-black text-slate-900">{plan.price}</Text></View>
-                           <View className={`w-12 h-12 rounded-full items-center justify-center ${isActive ? 'bg-emerald-100' : 'bg-slate-50'}`}>{isActive ? <Check size={24} color="#059669" /> : <CreditCard size={24} color="#94a3b8" />}</View>
+                     <TouchableOpacity key={i} onPress={() => handleUpgrade(plan)} disabled={isActive} style={[styles.planCard, cardActiveStyle]}>
+                        {plan.isBest && (
+                            <View style={styles.bestPill}><Text style={styles.bestPillText}>Most Popular</Text></View>
+                        )}
+                        <View style={styles.planCardHeaderRow}>
+                           <View>
+                               <Text style={styles.planName}>{plan.name}</Text>
+                               <Text style={styles.planPrice}>{plan.price}</Text>
+                           </View>
+                           <View style={[styles.planIconCircle, isActive ? styles.planIconCircleActive : {}]}>
+                               {isActive ? <Check size={24} color="#059669" /> : <CreditCard size={24} color="#94a3b8" />}
+                           </View>
                         </View>
-                        {(!isActive && !isQueued) && <View className="bg-slate-900 py-4 rounded-xl items-center"><Text className="text-white font-black text-xs uppercase tracking-widest">Select Plan</Text></View>}
-                        {(isActive || isQueued) && <View className="items-center py-2"><Text className="text-emerald-600 font-black text-xs uppercase tracking-widest">{isActive ? 'Current Active Plan' : 'Queued for Activation'}</Text></View>}
+                        {(!isActive && !isQueued) && (
+                            <View style={styles.selectPlanBtn}><Text style={styles.selectPlanBtnText}>Select Plan</Text></View>
+                        )}
+                        {(isActive || isQueued) && (
+                            <View style={styles.currentPlanBtn}>
+                                <Text style={styles.currentPlanText}>{isActive ? 'Current Active Plan' : 'Queued for Activation'}</Text>
+                            </View>
+                        )}
                      </TouchableOpacity>
                    );
                  })}
@@ -427,18 +445,24 @@ export default function DashboardScreen({ navigation }) {
       {/* --- PAYSTACK WEBVIEW MODAL (MOBILE ONLY) --- */}
       {Platform.OS !== 'web' && (
         <Modal visible={!!paystackUrl} animationType="slide">
-            <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-                <View className="px-4 py-2 border-b border-slate-100 flex-row justify-between items-center">
-                    <Text className="font-bold text-slate-900">Secure Payment</Text>
-                    <TouchableOpacity onPress={() => setPaystackUrl(null)} className="bg-slate-100 p-2 rounded-full"><X size={20} color="#000" /></TouchableOpacity>
+            <SafeAreaView style={styles.flex1BgWhite}>
+                <View style={styles.modalHeader}>
+                    <Text style={styles.webviewTitle}>Secure Payment</Text>
+                    <TouchableOpacity onPress={() => setPaystackUrl(null)} style={styles.closeBtn}>
+                        <X size={20} color="#000" />
+                    </TouchableOpacity>
                 </View>
                 {paystackUrl && WebView && (
                     <WebView 
                         source={{ uri: paystackUrl }}
-                        style={{ flex: 1 }}
+                        style={styles.flex1}
                         onNavigationStateChange={handleWebViewNavigation}
                         startInLoadingState={true}
-                        renderLoading={() => <View className="absolute inset-0 flex items-center justify-center bg-white"><ActivityIndicator size="large" color="#059669" /></View>}
+                        renderLoading={() => (
+                            <View style={styles.webviewLoading}>
+                                <ActivityIndicator size="large" color="#059669" />
+                            </View>
+                        )}
                     />
                 )}
             </SafeAreaView>
@@ -447,10 +471,10 @@ export default function DashboardScreen({ navigation }) {
 
       {/* --- PAYMENT VERIFICATION OVERLAY --- */}
       {verifyingPayment && (
-          <View className="absolute inset-0 bg-black/50 items-center justify-center z-50">
-              <View className="bg-white p-6 rounded-2xl items-center shadow-xl">
-                  <ActivityIndicator size="large" color="#059669" className="mb-4" />
-                  <Text className="font-bold text-slate-900">Verifying Payment...</Text>
+          <View style={styles.verifyOverlay}>
+              <View style={styles.verifyBox}>
+                  <ActivityIndicator size="large" color="#059669" style={{ marginBottom: 16 }} />
+                  <Text style={styles.verifyText}>Verifying Payment...</Text>
               </View>
           </View>
       )}
@@ -458,3 +482,136 @@ export default function DashboardScreen({ navigation }) {
     </View>
   );
 }
+
+// ==========================================
+// STANDARD STYLES (NO TAILWIND NEEDED)
+// ==========================================
+const styles = StyleSheet.create({
+    // Globals
+    flex1: { flex: 1 },
+    flex1BgWhite: { flex: 1, backgroundColor: '#ffffff' },
+    mainContainer: { flex: 1, backgroundColor: '#f8fafc', position: 'relative' },
+    loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' },
+    loadingText: { color: '#94a3b8', fontWeight: 'bold' },
+    contentPadding: { paddingHorizontal: 24, paddingBottom: 80, gap: 24 },
+    z10: { zIndex: 10 },
+    
+    // Aurora Background
+    auroraContainer: { position: 'absolute', width: width, height: height, zIndex: -1, backgroundColor: '#f8fafc' },
+    blob1: { position: 'absolute', top: -50, left: -50, width: 300, height: 300, backgroundColor: '#e9d5ff', borderRadius: 150, opacity: 0.5 },
+    blob2: { position: 'absolute', top: 50, right: -50, width: 280, height: 280, backgroundColor: '#a7f3d0', borderRadius: 140, opacity: 0.5 },
+
+    // Shadows
+    shadowSm: { shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
+    shadowLg: { shadowColor: '#cbd5e1', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 10 },
+    shadowGreen: { shadowColor: '#a7f3d0', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 10 },
+
+    // Header
+    headerRow: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    greetingText: { color: '#64748b', fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+    shopNameRow: { flexDirection: 'row', alignItems: 'center' },
+    shopNameText: { fontSize: 24, fontWeight: '900', color: '#0f172a', textTransform: 'capitalize', marginRight: 4, letterSpacing: -0.5 },
+    avatarImage: { width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: '#ffffff' },
+    avatarFallback: { width: 48, height: 48, backgroundColor: '#0f172a', borderRadius: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#ffffff' },
+    avatarFallbackText: { color: '#ffffff', fontWeight: '900', fontSize: 18 },
+
+    // Card 1: Shop Link
+    cardOuter: { borderRadius: 32, overflow: 'hidden' },
+    gradientCard: { padding: 24, height: 192, justifyContent: 'space-between' },
+    gradientGlow: { position: 'absolute', top: -40, right: -40, width: 160, height: 160, backgroundColor: 'rgba(16, 185, 129, 0.2)', borderRadius: 80 },
+    liveBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+    liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#34d399' },
+    liveText: { color: '#6ee7b7', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 },
+    linkTitle: { color: '#ffffff', fontSize: 30, fontWeight: '900', letterSpacing: -1 },
+    linkUrlBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', padding: 6, paddingLeft: 16, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    linkUrlText: { color: '#6ee7b7', fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: 12, flex: 1, marginRight: 8 },
+    copyButton: { backgroundColor: '#ffffff', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
+    copyButtonText: { color: '#0f172a', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
+
+    // Card 2: Status
+    card: { backgroundColor: '#ffffff', padding: 24, borderRadius: 32, borderWidth: 1, borderColor: '#f1f5f9', overflow: 'hidden' },
+    flexRowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    iconBoxDark: { width: 40, height: 40, backgroundColor: '#0f172a', borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 12, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 4 },
+    planTitleText: { fontSize: 20, fontWeight: '900', color: '#0f172a', textTransform: 'capitalize' },
+    trialPill: { marginTop: 8, backgroundColor: '#fffbeb', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8, alignSelf: 'flex-start', borderWidth: 1, borderColor: '#fef3c7' },
+    trialPillText: { color: '#b45309', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' },
+    progressBarBg: { marginTop: 16, width: '100%', backgroundColor: '#f1f5f9', height: 8, borderRadius: 4, overflow: 'hidden' },
+    progressBarFill: { height: '100%', backgroundColor: '#0f172a' },
+    usageText: { color: '#94a3b8', fontSize: 10, fontWeight: 'bold', marginTop: 8 },
+    timerCircleOuter: { alignItems: 'center', justifyContent: 'center' },
+    timerCircleInner: { width: 80, height: 80, borderWidth: 4, borderColor: '#f1f5f9', borderRadius: 40, alignItems: 'center', justifyContent: 'center' },
+    timerNumber: { fontSize: 24, fontWeight: '900', color: '#0f172a' },
+    timerLabel: { fontSize: 8, fontWeight: 'bold', textTransform: 'uppercase', color: '#94a3b8' },
+
+    // Card 3: Views
+    cardLarge: { backgroundColor: '#ffffff', padding: 32, borderRadius: 32, borderWidth: 1, borderColor: '#f1f5f9', position: 'relative', overflow: 'hidden' },
+    viewsHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
+    viewsHeaderLabel: { color: '#94a3b8', fontWeight: '900', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 },
+    refreshBtn: { backgroundColor: '#eff6ff', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 4 },
+    refreshBtnText: { color: '#2563eb', fontSize: 9, fontWeight: 'bold' },
+    viewsNumberText: { fontSize: 48, fontWeight: '900', color: '#0f172a', letterSpacing: -1, marginBottom: 24 },
+    chartRow: { flexDirection: 'row', alignItems: 'flex-end', height: 64, gap: 6, opacity: 0.8 },
+    chartBar: { flex: 1, borderTopLeftRadius: 2, borderTopRightRadius: 2 },
+    chartBar1: { backgroundColor: '#dbeafe', height: '30%' },
+    chartBar2: { backgroundColor: '#bfdbfe', height: '50%' },
+    chartBar3: { backgroundColor: '#93c5fd', height: '40%' },
+    chartBar4: { backgroundColor: '#60a5fa', height: '70%' },
+    chartBar5: { backgroundColor: '#3b82f6', height: '55%' },
+    chartBar6: { backgroundColor: '#2563eb', height: '100%' },
+    chartBarShadow: { shadowColor: '#bfdbfe', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 10, elevation: 5 },
+
+    // Split Row
+    splitRow: { flexDirection: 'row', gap: 16 },
+    splitCard: { flex: 1, backgroundColor: '#ffffff', padding: 24, borderRadius: 32, borderWidth: 1, borderColor: '#f1f5f9', justifyContent: 'space-between', minHeight: 160 },
+    bgIconBox: { alignItems: 'flex-end', opacity: 0.1 },
+    splitCardNumber: { fontSize: 36, fontWeight: '900', color: '#0f172a' },
+    splitCardLabel: { color: '#94a3b8', fontWeight: 'bold', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 },
+    manageRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
+    manageText: { color: '#059669', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' },
+
+    splitCardGreen: { flex: 1, backgroundColor: '#059669', padding: 24, borderRadius: 32, justifyContent: 'space-between', minHeight: 160, position: 'relative', overflow: 'hidden' },
+    glassIconBox: { backgroundColor: 'rgba(255,255,255,0.2)', width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+    whatsappCardTitle: { color: '#ffffff', fontWeight: '900', fontSize: 18, lineHeight: 20, marginBottom: 4 },
+    activePill: { backgroundColor: 'rgba(0,0,0,0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, alignSelf: 'flex-start' },
+    activePillText: { color: 'rgba(255,255,255,0.8)', fontSize: 8, fontWeight: 'bold', textTransform: 'uppercase' },
+    bgGlobeIcon: { position: 'absolute', bottom: -24, right: -24, opacity: 0.1 },
+
+    // Share Button
+    shareBtn: { backgroundColor: '#0f172a', padding: 16, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', shadowColor: '#0f172a', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8, marginBottom: 16 },
+    shareBtnText: { color: '#ffffff', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 },
+
+    // Modals & Upgrade
+    modalHeader: { paddingHorizontal: 24, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff', zIndex: 10 },
+    modalTitle: { fontWeight: '900', fontSize: 18, color: '#0f172a' },
+    closeBtn: { backgroundColor: '#f1f5f9', padding: 8, borderRadius: 16 },
+    closeBtnText: { fontWeight: 'bold', color: '#64748b', fontSize: 12 },
+    modalScrollContent: { paddingHorizontal: 24, paddingBottom: 80, paddingTop: 24 },
+    modalHero: { alignItems: 'center', marginBottom: 32 },
+    modalCrownBox: { backgroundColor: '#f8fafc', padding: 16, borderRadius: 40, marginBottom: 16, borderWidth: 1, borderColor: '#f1f5f9' },
+    modalHeroTitle: { fontSize: 30, fontWeight: '900', color: '#0f172a', textAlign: 'center', textTransform: 'capitalize', marginBottom: 4 },
+    modalTrialPill: { backgroundColor: '#d1fae5', paddingHorizontal: 16, paddingVertical: 4, borderRadius: 16, marginTop: 8 },
+    modalTrialText: { color: '#065f46', fontWeight: 'bold', fontSize: 12 },
+    
+    planList: { gap: 24 },
+    planCard: { borderWidth: 2, borderRadius: 24, padding: 20, position: 'relative' },
+    planCardInactive: { backgroundColor: '#ffffff', borderColor: '#f1f5f9' },
+    planCardActive: { backgroundColor: '#ffffff', borderColor: '#10b981', shadowColor: '#d1fae5', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 1, shadowRadius: 10, elevation: 8 },
+    bestPill: { position: 'absolute', top: -12, right: 24, backgroundColor: '#10b981', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
+    bestPillText: { color: '#ffffff', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' },
+    planCardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+    planName: { color: '#94a3b8', fontWeight: '900', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
+    planPrice: { fontSize: 30, fontWeight: '900', color: '#0f172a' },
+    planIconCircle: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+    planIconCircleActive: { backgroundColor: '#d1fae5' },
+    selectPlanBtn: { backgroundColor: '#0f172a', paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
+    selectPlanBtnText: { color: '#ffffff', fontWeight: '900', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
+    currentPlanBtn: { alignItems: 'center', paddingVertical: 8 },
+    currentPlanText: { color: '#059669', fontWeight: '900', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
+
+    // Webview & Overlay
+    webviewTitle: { fontWeight: 'bold', color: '#0f172a' },
+    webviewLoading: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' },
+    verifyOverlay: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', zIndex: 50 },
+    verifyBox: { backgroundColor: '#ffffff', padding: 24, borderRadius: 16, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 15 },
+    verifyText: { fontWeight: 'bold', color: '#0f172a' }
+});

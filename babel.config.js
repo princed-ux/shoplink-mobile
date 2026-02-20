@@ -1,12 +1,9 @@
-module.exports = function (api) {
+module.exports = function(api) {
   api.cache(true);
   return {
-    presets: [
-      ["babel-preset-expo", { jsxImportSource: "nativewind" }],
-      "nativewind/babel",
-    ],
+    presets: ['babel-preset-expo'],
     plugins: [
-      "react-native-reanimated/plugin", // Keep this if you have it
+      'react-native-reanimated/plugin', // Keep this for your Aurora animations!
     ],
   };
 };

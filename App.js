@@ -1,20 +1,23 @@
-import './global.css'; 
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
 import Toast from 'react-native-toast-message';
 import { LayoutDashboard, ShoppingBag, Settings } from 'lucide-react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Platform } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Platform, View } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 // Import the Animation
 import AnimatedSplash from './src/screens/AnimatedSplash';
 
-// Screens
+// --- AUTH SCREENS ---
 import LoginScreen from './src/screens/LoginScreen';
+import SignupScreen from './src/screens/SignupScreen';
+import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
+
+// --- MAIN SCREENS ---
 import DashboardScreen from './src/screens/DashboardScreen';
 import ProductManager from './src/screens/ProductManager';
 import BrandingScreen from './src/screens/BrandingScreen'; 
@@ -24,28 +27,97 @@ const Stack = createStackNavigator();
 
 // --- MAIN APP TABS ---
 function AppTabs() {
+  const [needsSecurityUpdate, setNeedsSecurityUpdate] = useState(false);
+  const insets = useSafeAreaInsets(); 
+
+  useEffect(() => {
+    const checkSecurityStatus = async () => {
+      try {
+        let userStr = Platform.OS === 'web' 
+          ? localStorage.getItem('quickshop_user') 
+          : await SecureStore.getItemAsync('quickshop_user');
+          
+        if (userStr) {
+          const userData = JSON.parse(userStr);
+          setNeedsSecurityUpdate(!userData.vendor?.security_question);
+        }
+      } catch (e) {
+        console.error("Tab Check Error:", e);
+      }
+    };
+
+    checkSecurityStatus();
+    const intervalId = setInterval(checkSecurityStatus, 2000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const floatingBottomMargin = Platform.OS === 'android' ? 20 : Math.max(insets.bottom, 20);
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
+        // THIS FIXES THE CLIPPING TEXT:
+        safeAreaInsets: { bottom: 0 }, 
         tabBarStyle: {
+          position: 'absolute', 
+          bottom: floatingBottomMargin, 
+          left: 20, 
+          right: 20,
           backgroundColor: '#ffffff',
+          borderRadius: 32, 
+          height: 72, 
           borderTopWidth: 0,
-          elevation: 0,
-          height: 80,
-          paddingBottom: 20,
-          paddingTop: 10,
-          borderTopColor: '#f1f5f9',
-          borderTopWidth: 1,
+          elevation: 20, 
+          shadowColor: '#0f172a', 
+          shadowOffset: { width: 0, height: 10 },
+          shadowOpacity: 0.15,
+          shadowRadius: 20,
+        },
+        tabBarItemStyle: {
+          // Adjusted to center everything perfectly
+          justifyContent: 'center', 
+          alignItems: 'center',
+          paddingTop: 8,
+          paddingBottom: 8,
         },
         tabBarActiveTintColor: '#059669',
         tabBarInactiveTintColor: '#94a3b8',
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '800' }
+        tabBarLabelStyle: { 
+          fontSize: 10, 
+          fontWeight: '900', 
+          marginTop: 4 
+        }
       }}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ tabBarIcon: ({ color }) => <LayoutDashboard size={24} color={color} /> }} />
-      <Tab.Screen name="Inventory" component={ProductManager} options={{ tabBarIcon: ({ color }) => <ShoppingBag size={24} color={color} /> }} />
-      <Tab.Screen name="Settings" component={BrandingScreen} options={{ tabBarIcon: ({ color }) => <Settings size={24} color={color} /> }} />
+      <Tab.Screen 
+        name="Dashboard" 
+        component={DashboardScreen} 
+        options={{ tabBarIcon: ({ color }) => <LayoutDashboard size={24} color={color} /> }} 
+      />
+      <Tab.Screen 
+        name="Inventory" 
+        component={ProductManager} 
+        options={{ tabBarIcon: ({ color }) => <ShoppingBag size={24} color={color} /> }} 
+      />
+      <Tab.Screen 
+        name="Settings" 
+        component={BrandingScreen} 
+        options={{ 
+          tabBarIcon: ({ color }) => (
+            <View style={{ position: 'relative' }}>
+              <Settings size={24} color={color} />
+              
+              {needsSecurityUpdate && (
+                <View style={{ 
+                  position: 'absolute', top: -2, right: -2, width: 10, height: 10, 
+                  backgroundColor: '#ef4444', borderRadius: 5, borderWidth: 2, borderColor: '#ffffff'
+                }} />
+              )}
+            </View>
+          ) 
+        }} 
+      />
     </Tab.Navigator>
   );
 }
@@ -55,49 +127,38 @@ export default function App() {
   const [isShowSplash, setIsShowSplash] = useState(true);
   const [initialRoute, setInitialRoute] = useState("Login");
 
-  // --- CHECK LOGIN STATUS WHILE SPLASH PLAYS ---
   useEffect(() => {
     const checkLoginStatus = async () => {
       try {
         let user;
-        if (Platform.OS === 'web') {
-          user = localStorage.getItem('quickshop_user');
-        } else {
-          user = await SecureStore.getItemAsync('quickshop_user');
-        }
+        if (Platform.OS === 'web') user = localStorage.getItem('quickshop_user');
+        else user = await SecureStore.getItemAsync('quickshop_user');
 
-        if (user) {
-          console.log("User found, auto-login...");
-          setInitialRoute("MainApp"); // Go straight to Dashboard
-        } else {
-          console.log("No user found, go to Login.");
-          setInitialRoute("Login");
-        }
+        if (user) setInitialRoute("MainApp");
+        else setInitialRoute("Login");
       } catch (e) {
         console.error("Auth Check Failed", e);
       }
     };
-
     checkLoginStatus();
   }, []);
 
-  // 1. Show Animated Splash First
-  if (isShowSplash) {
-    return (
-      <AnimatedSplash onFinish={() => setIsShowSplash(false)} />
-    );
-  }
+  if (isShowSplash) return <AnimatedSplash onFinish={() => setIsShowSplash(false)} />;
 
-  // 2. Once Splash finishes, show the App (starting at the correct screen)
   return (
     <SafeAreaProvider>
       <NavigationContainer>
         <StatusBar style="dark" />
         <Stack.Navigator 
-            initialRouteName={initialRoute} // <--- MAGIC HAPPENS HERE
-            screenOptions={{ headerShown: false }}
+            initialRouteName={initialRoute} 
+            screenOptions={{ 
+              headerShown: false,
+              cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS 
+            }}
         >
           <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Signup" component={SignupScreen} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
           <Stack.Screen name="MainApp" component={AppTabs} />
         </Stack.Navigator>
         <Toast />

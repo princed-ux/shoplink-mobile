@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, Image, ScrollView, 
-  ActivityIndicator, Platform, Linking, Modal, Animated, Easing, Dimensions
+  ActivityIndicator, Platform, Linking, Modal, Animated, StyleSheet 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
-import { Camera, LogOut, Save, User, ShieldCheck, Lock, Globe, ShoppingBag, Gift, Tag, Package, Star, AlertCircle, Check } from 'lucide-react-native';
+import { Camera, LogOut, Save, User, ShieldCheck, Lock, Globe, AlertCircle, Check, X } from 'lucide-react-native';
 
-// !!! MATCH THIS WITH YOUR BACKEND !!!
+// Import our shared background!
+import FallingBackground from '../components/FallingBackground';
+
 const API_URL = 'https://api.shoplinkvi.com'; 
-
-const { width, height } = Dimensions.get('window');
 
 const SECURITY_QUESTIONS = [
   "What was the very first item you sold?",
@@ -23,55 +23,6 @@ const SECURITY_QUESTIONS = [
   "What is your mother's maiden name?", 
   "What is the name of your first pet?"
 ];
-
-// --- 1. FALLING ICONS (Reused) ---
-const FallingBackground = () => {
-  const [icons] = useState(() => 
-    Array.from({ length: 12 }).map((_, i) => ({
-      id: i,
-      Icon: [ShoppingBag, Gift, Tag, Package, Star][Math.floor(Math.random() * 5)],
-      anim: new Animated.Value(-50), 
-      left: Math.random() * width,
-      size: 15 + Math.random() * 20,
-      duration: 5000 + Math.random() * 5000,
-      delay: Math.random() * 2000
-    }))
-  );
-
-  useEffect(() => {
-    icons.forEach(icon => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(icon.delay),
-          Animated.timing(icon.anim, {
-            toValue: height + 50,
-            duration: icon.duration,
-            easing: Easing.linear,
-            useNativeDriver: true
-          })
-        ])
-      ).start();
-    });
-  }, []);
-
-  return (
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: -1 }}>
-      {icons.map((item) => (
-        <Animated.View 
-          key={item.id} 
-          style={{ 
-            position: 'absolute', 
-            left: item.left, 
-            transform: [{ translateY: item.anim }],
-            opacity: 0.05 
-          }}
-        >
-          <item.Icon size={item.size} color="#059669" />
-        </Animated.View>
-      ))}
-    </View>
-  );
-};
 
 export default function BrandingScreen({ navigation }) {
   const [user, setUser] = useState(null);
@@ -87,9 +38,25 @@ export default function BrandingScreen({ navigation }) {
   const [securityAnswer, setSecurityAnswer] = useState('');
   const [secLoading, setSecLoading] = useState(false);
 
+  // Logout State (NEW)
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+
+  // Pulse Animation for the Red Dot
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
   useEffect(() => {
     loadUserData();
   }, []);
+
+  // Make the red dot breathe/pulse if security is missing
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.5, duration: 800, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true })
+      ])
+    ).start();
+  }, [pulseAnim]);
 
   const loadUserData = async () => {
     try {
@@ -109,7 +76,6 @@ export default function BrandingScreen({ navigation }) {
     }
   };
 
-  // --- 1. BRANDING LOGIC ---
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -156,7 +122,6 @@ export default function BrandingScreen({ navigation }) {
     }
   };
 
-  // --- 2. SECURITY LOGIC ---
   const handleUpdateSecurity = async () => {
     if (!securityAnswer.trim()) return Toast.show({ type: 'error', text1: 'Answer required' });
     setSecLoading(true);
@@ -183,7 +148,6 @@ export default function BrandingScreen({ navigation }) {
     }
   };
 
-  // --- 3. STOREFRONT LOGIC ---
   const openLiveStore = () => {
     if (user?.vendor?.slug) {
       const url = `https://shoplinkvi.com/shop.vi/${user.vendor.slug}`;
@@ -194,6 +158,7 @@ export default function BrandingScreen({ navigation }) {
   };
 
   const handleLogout = async () => {
+    setLogoutModalVisible(false); // Close the modal first
     if (Platform.OS === 'web') localStorage.removeItem('quickshop_user');
     else await SecureStore.deleteItemAsync('quickshop_user');
     navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
@@ -202,162 +167,263 @@ export default function BrandingScreen({ navigation }) {
   const hasSecurityQuestion = !!user?.vendor?.security_question;
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 relative">
+    <SafeAreaView style={styles.container}>
       <FallingBackground />
 
-      <ScrollView className="px-6 pt-6">
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        <Text className="text-3xl font-black text-slate-900 mb-8">Settings</Text>
+        <Text style={styles.pageTitle}>Settings</Text>
 
         {/* --- SECTION 1: LIVE STORE PREVIEW --- */}
-        <TouchableOpacity 
-          onPress={openLiveStore}
-          className="bg-emerald-600 p-6 rounded-[24px] shadow-lg shadow-emerald-200 mb-8 flex-row items-center justify-between active:bg-emerald-700"
-        >
+        <TouchableOpacity onPress={openLiveStore} style={styles.liveStoreCard}>
           <View>
-             <Text className="text-emerald-100 text-xs font-bold uppercase tracking-widest mb-1">Public Storefront</Text>
-             <Text className="text-white text-xl font-black">View Live Shop</Text>
+             <Text style={styles.liveStoreLabel}>Public Storefront</Text>
+             <Text style={styles.liveStoreTitle}>View Live Shop</Text>
           </View>
-          <View className="bg-white/20 p-3 rounded-full backdrop-blur-md">
+          <View style={styles.liveStoreIconBox}>
              <Globe size={24} color="white" />
           </View>
         </TouchableOpacity>
 
         {/* --- SECTION 2: BRANDING --- */}
-        <View className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 mb-6">
-          <View className="flex-row items-center mb-6">
-            <User size={24} color="#3b82f6" className="mr-3" />
-            <Text className="text-lg font-bold text-slate-900">Store Branding</Text>
+        <View style={styles.brandingCard}>
+          <View style={styles.cardHeader}>
+            <User size={24} color="#3b82f6" style={{ marginRight: 12 }} />
+            <Text style={styles.cardTitle}>Store Branding</Text>
           </View>
 
-          <View className="items-center mb-6">
-            <TouchableOpacity onPress={pickImage} className="relative active:scale-95 transition-transform">
+          <View style={styles.avatarContainer}>
+            <TouchableOpacity onPress={pickImage} style={styles.avatarWrapper}>
               {logo ? (
-                <Image source={{ uri: logo }} className="w-24 h-24 rounded-full border-4 border-slate-50 shadow-sm" />
+                <Image source={{ uri: logo }} style={styles.avatarImage} />
               ) : (
-                <View className="w-24 h-24 bg-slate-100 rounded-full items-center justify-center border-4 border-white shadow-sm">
+                <View style={styles.avatarPlaceholder}>
                    <Camera size={32} color="#94a3b8" />
                 </View>
               )}
-              <View className="absolute bottom-0 right-0 bg-slate-900 p-2 rounded-full border-2 border-white">
+              <View style={styles.avatarEditBadge}>
                  <Camera size={14} color="white" />
               </View>
             </TouchableOpacity>
           </View>
 
-          <Text className="text-slate-500 font-bold mb-2 ml-1 text-xs uppercase tracking-wider">Shop Name</Text>
+          <Text style={styles.inputLabel}>Shop Name</Text>
           <TextInput 
             value={shopName}
             onChangeText={setShopName}
-            className="bg-slate-50 border-2 border-slate-100 rounded-xl p-4 font-bold text-slate-900 mb-6 focus:border-slate-300"
+            style={Platform.OS === 'web' ? [styles.textInput, { outlineStyle: 'none' }] : styles.textInput}
             placeholder="Enter Shop Name"
+            placeholderTextColor="#cbd5e1"
           />
 
-          <TouchableOpacity 
-            onPress={handleUpdateProfile} 
-            disabled={loading}
-            className="bg-slate-900 h-14 rounded-xl flex-row items-center justify-center shadow-lg active:scale-95"
-          >
+          <TouchableOpacity onPress={handleUpdateProfile} disabled={loading} style={styles.saveBtn}>
             {loading ? <ActivityIndicator color="white" /> : (
               <>
-                <Save size={20} color="white" className="mr-2" />
-                <Text className="text-white font-black text-base">Save Branding</Text>
+                <Save size={20} color="white" style={{ marginRight: 8 }} />
+                <Text style={styles.saveBtnText}>Save Branding</Text>
               </>
             )}
           </TouchableOpacity>
         </View>
 
         {/* --- SECTION 3: ACCOUNT & SECURITY --- */}
-        <View className={`bg-white p-6 rounded-[32px] shadow-sm border mb-8 ${!hasSecurityQuestion ? 'border-red-200 bg-red-50/10' : 'border-slate-100'}`}>
-           <View className="flex-row items-center justify-between mb-6">
-              <View className="flex-row items-center">
-                 <ShieldCheck size={24} color={!hasSecurityQuestion ? "#ef4444" : "#f59e0b"} className="mr-3" />
-                 <Text className="text-lg font-bold text-slate-900">Account Security</Text>
+        <View style={[styles.securityCard, !hasSecurityQuestion ? styles.securityCardWarning : styles.securityCardSafe]}>
+           <View style={styles.securityHeaderRow}>
+              <View style={styles.rowCenter}>
+                 <ShieldCheck size={24} color={!hasSecurityQuestion ? "#ef4444" : "#10b981"} style={{ marginRight: 12 }} />
+                 <Text style={styles.cardTitle}>Account Security</Text>
               </View>
-              {!hasSecurityQuestion && (
-                  <View className="bg-red-100 px-2 py-1 rounded-md flex-row items-center">
-                      <AlertCircle size={12} color="#ef4444" className="mr-1"/>
-                      <Text className="text-red-500 text-[10px] font-black uppercase tracking-wide">Action Needed</Text>
+              
+              {!hasSecurityQuestion ? (
+                  <View style={styles.warningBadge}>
+                      <Animated.View style={[styles.pulsingDot, { transform: [{ scale: pulseAnim }] }]} />
+                      <Text style={styles.warningBadgeText}>Action Needed</Text>
+                  </View>
+              ) : (
+                  <View style={styles.safeBadge}>
+                      <Check size={12} color="#10b981" style={{ marginRight: 4 }}/>
+                      <Text style={styles.safeBadgeText}>Secured</Text>
                   </View>
               )}
            </View>
 
-           <View className="p-4 bg-slate-50 rounded-xl border border-slate-100 mb-4">
-               <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Phone Number</Text>
-               <Text className="text-slate-900 font-bold text-lg">{user?.vendor?.phone}</Text>
+           <View style={styles.phoneBox}>
+               <Text style={styles.phoneLabel}>Phone Number</Text>
+               <Text style={styles.phoneText}>{user?.vendor?.phone || "Loading..."}</Text>
            </View>
 
-           <TouchableOpacity 
-              onPress={() => setSecurityModalVisible(true)}
-              className={`w-full border-2 py-4 rounded-xl flex-row items-center justify-center active:bg-slate-50 ${!hasSecurityQuestion ? 'border-red-100 bg-red-50' : 'border-slate-100'}`}
-           >
-              <Lock size={18} color={!hasSecurityQuestion ? "#ef4444" : "#64748b"} className="mr-2" />
-              <Text className={`${!hasSecurityQuestion ? 'text-red-500' : 'text-slate-600'} font-bold text-sm uppercase`}>
-                  {hasSecurityQuestion ? "Update Security Question" : "Protect Your Account Now"}
-              </Text>
-           </TouchableOpacity>
+           {/* ONLY SHOW BUTTON IF THEY HAVEN'T SET IT UP */}
+           {!hasSecurityQuestion && (
+               <TouchableOpacity 
+                 onPress={() => setSecurityModalVisible(true)}
+                 style={styles.actionNeededBtn}
+               >
+                 <Lock size={18} color="#ef4444" style={{ marginRight: 8 }} />
+                 <Text style={styles.actionNeededBtnText}>Protect Your Account Now</Text>
+               </TouchableOpacity>
+           )}
         </View>
 
-        {/* --- LOGOUT --- */}
-        <TouchableOpacity 
-          onPress={handleLogout}
-          className="flex-row items-center justify-center gap-2 p-4 mb-10 active:opacity-50"
-        >
+        {/* --- LOGOUT BUTTON --- */}
+        <TouchableOpacity onPress={() => setLogoutModalVisible(true)} style={styles.logoutBtn}>
           <LogOut size={20} color="#ef4444" />
-          <Text className="text-red-500 font-black uppercase tracking-widest text-sm">Sign Out</Text>
+          <Text style={styles.logoutBtnText}>Sign Out</Text>
         </TouchableOpacity>
 
       </ScrollView>
 
       {/* --- SECURITY MODAL --- */}
       <Modal visible={securityModalVisible} animationType="slide" presentationStyle="pageSheet">
-         <View className="flex-1 bg-slate-50">
-            {/* Header */}
-            <View className="px-6 py-4 flex-row justify-end bg-white border-b border-slate-100">
-               <TouchableOpacity onPress={() => setSecurityModalVisible(false)} className="bg-slate-100 p-2 rounded-full">
-                  <Text className="font-bold text-slate-500">Close</Text>
+         <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+               <TouchableOpacity onPress={() => setSecurityModalVisible(false)} style={styles.closeBtn}>
+                  <Text style={styles.closeBtnText}>Close</Text>
                </TouchableOpacity>
             </View>
 
-            <ScrollView className="p-6">
-               <Text className="text-3xl font-black text-slate-900 mb-2">Security Settings</Text>
-               <Text className="text-slate-500 font-medium mb-8">Set a recovery question. This is the ONLY way to recover your account if you lose your password.</Text>
+            <ScrollView contentContainerStyle={styles.modalScroll}>
+               <Text style={styles.modalTitle}>Security Settings</Text>
+               <Text style={styles.modalSubtitle}>Set a recovery question. This is the ONLY way to recover your account if you lose your password.</Text>
                
-               <Text className="text-slate-500 font-bold mb-2 ml-1 text-xs uppercase tracking-wider">Select a Question</Text>
-               <View className="bg-white border border-slate-200 rounded-2xl mb-6 overflow-hidden">
+               <Text style={styles.inputLabel}>Select a Question</Text>
+               <View style={styles.questionList}>
                   {SECURITY_QUESTIONS.map((q, i) => (
                       <TouchableOpacity 
                         key={i} 
                         onPress={() => setSecurityQuestion(q)} 
-                        className={`p-4 border-b border-slate-100 flex-row items-center justify-between ${securityQuestion === q ? 'bg-emerald-50' : 'bg-white'}`}
+                        style={[styles.questionItem, securityQuestion === q && styles.questionItemActive]}
                       >
-                          <Text className={`font-bold flex-1 ${securityQuestion === q ? "text-emerald-700" : "text-slate-600"}`}>{q}</Text>
+                          <Text style={[styles.questionText, securityQuestion === q && styles.questionTextActive]}>{q}</Text>
                           {securityQuestion === q && <Check size={16} color="#047857" />}
                       </TouchableOpacity>
                   ))}
                </View>
 
-               <Text className="text-slate-500 font-bold mb-2 ml-1 text-xs uppercase tracking-wider">Your Answer</Text>
+               <Text style={styles.inputLabel}>Your Answer</Text>
                <TextInput 
                   value={securityAnswer}
                   onChangeText={setSecurityAnswer}
-                  className="bg-white border-2 border-slate-200 rounded-xl p-4 font-bold text-slate-900 mb-8 text-lg focus:border-slate-400"
+                  style={Platform.OS === 'web' ? [styles.modalInput, { outlineStyle: 'none' }] : styles.modalInput}
                   placeholder="Type your secret answer..."
-                  secureTextEntry={false} 
+                  placeholderTextColor="#cbd5e1"
                />
 
-               <TouchableOpacity 
-                  onPress={handleUpdateSecurity} 
-                  disabled={secLoading}
-                  className="bg-emerald-600 h-16 rounded-2xl items-center justify-center mb-4 shadow-lg shadow-emerald-200 active:scale-95"
-               >
-                  {secLoading ? <ActivityIndicator color="white" /> : <Text className="text-white font-black text-lg uppercase tracking-widest">Save & Protect</Text>}
+               <TouchableOpacity onPress={handleUpdateSecurity} disabled={secLoading} style={styles.modalSaveBtn}>
+                  {secLoading ? <ActivityIndicator color="white" /> : <Text style={styles.modalSaveBtnText}>Save & Protect</Text>}
                </TouchableOpacity>
-
             </ScrollView>
          </View>
+      </Modal>
+
+      {/* --- LOGOUT CONFIRMATION MODAL --- */}
+      <Modal visible={logoutModalVisible} transparent={true} animationType="fade">
+          <View style={styles.logoutOverlay}>
+              <View style={styles.logoutModalContent}>
+                  <View style={styles.logoutIconBox}>
+                      <LogOut size={32} color="#ef4444" />
+                  </View>
+                  <Text style={styles.logoutModalTitle}>Sign Out</Text>
+                  <Text style={styles.logoutModalText}>Are you sure you want to sign out of your account?</Text>
+
+                  <View style={styles.logoutBtnRow}>
+                      <TouchableOpacity onPress={() => setLogoutModalVisible(false)} style={styles.logoutCancelBtn}>
+                          <Text style={styles.logoutCancelBtnText}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={handleLogout} style={styles.logoutConfirmBtn}>
+                          <Text style={styles.logoutConfirmBtnText}>Sign Out</Text>
+                      </TouchableOpacity>
+                  </View>
+              </View>
+          </View>
       </Modal>
 
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#f8fafc', position: 'relative' },
+  scrollContent: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 120 }, // Added padding for floating tab bar
+  pageTitle: { fontSize: 30, fontWeight: '900', color: '#0f172a', marginBottom: 32 },
+  rowCenter: { flexDirection: 'row', alignItems: 'center' },
+
+  // Live Store Card
+  liveStoreCard: { backgroundColor: '#059669', padding: 24, borderRadius: 24, marginBottom: 32, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', shadowColor: '#a7f3d0', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 10 },
+  liveStoreLabel: { color: '#d1fae5', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
+  liveStoreTitle: { color: '#ffffff', fontSize: 20, fontWeight: '900' },
+  liveStoreIconBox: { backgroundColor: 'rgba(255,255,255,0.2)', padding: 12, borderRadius: 32 },
+
+  // Generic Card Styles
+  brandingCard: { backgroundColor: '#ffffff', padding: 24, borderRadius: 32, borderWidth: 1, borderColor: '#f1f5f9', marginBottom: 24, shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
+  cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#0f172a' },
+
+  // Avatar
+  avatarContainer: { alignItems: 'center', marginBottom: 24 },
+  avatarWrapper: { position: 'relative' },
+  avatarImage: { width: 96, height: 96, borderRadius: 48, borderWidth: 4, borderColor: '#f8fafc' },
+  avatarPlaceholder: { width: 96, height: 96, backgroundColor: '#f1f5f9', borderRadius: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: '#ffffff' },
+  avatarEditBadge: { position: 'absolute', bottom: 0, right: 0, backgroundColor: '#0f172a', padding: 8, borderRadius: 16, borderWidth: 2, borderColor: '#ffffff' },
+
+  // Form Inputs
+  inputLabel: { color: '#64748b', fontWeight: 'bold', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, marginLeft: 4 },
+  textInput: { backgroundColor: '#f8fafc', borderWidth: 2, borderColor: '#f1f5f9', borderRadius: 16, padding: 16, fontWeight: 'bold', color: '#0f172a', fontSize: 16, marginBottom: 24 },
+  
+  saveBtn: { backgroundColor: '#0f172a', height: 56, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', shadowColor: '#0f172a', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
+  saveBtnText: { color: '#ffffff', fontWeight: '900', fontSize: 16 },
+
+  // Security Card
+  securityCard: { backgroundColor: '#ffffff', padding: 24, borderRadius: 32, borderWidth: 1, marginBottom: 32, shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+  securityCardWarning: { borderColor: '#fecaca', backgroundColor: '#fff5f5' },
+  securityCardSafe: { borderColor: '#f1f5f9' },
+  securityHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
+  
+  // Badges
+  warningBadge: { backgroundColor: '#fee2e2', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, flexDirection: 'row', alignItems: 'center' },
+  pulsingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444', marginRight: 6 },
+  warningBadgeText: { color: '#ef4444', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
+  safeBadge: { backgroundColor: '#d1fae5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, flexDirection: 'row', alignItems: 'center' },
+  safeBadgeText: { color: '#059669', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
+
+  phoneBox: { backgroundColor: '#f8fafc', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#f1f5f9', marginBottom: 16 },
+  phoneLabel: { color: '#94a3b8', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
+  phoneText: { color: '#0f172a', fontWeight: 'bold', fontSize: 18 },
+
+  actionNeededBtn: { width: '100%', borderWidth: 2, borderColor: '#fecaca', backgroundColor: '#fef2f2', paddingVertical: 16, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  actionNeededBtnText: { color: '#ef4444', fontWeight: 'bold', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
+
+  // Logout
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16, marginBottom: 40 },
+  logoutBtnText: { color: '#ef4444', fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, marginLeft: 8 },
+
+  // Settings Modal
+  modalContainer: { flex: 1, backgroundColor: '#f8fafc' },
+  modalHeader: { paddingHorizontal: 24, paddingVertical: 16, flexDirection: 'row', justifyContent: 'flex-end', backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  closeBtn: { backgroundColor: '#f1f5f9', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  closeBtnText: { fontWeight: 'bold', color: '#64748b' },
+  modalScroll: { padding: 24, paddingBottom: 60 },
+  modalTitle: { fontSize: 28, fontWeight: '900', color: '#0f172a', marginBottom: 8 },
+  modalSubtitle: { color: '#64748b', fontWeight: '500', marginBottom: 32, lineHeight: 20 },
+  
+  questionList: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 24, marginBottom: 24, overflow: 'hidden' },
+  questionItem: { padding: 16, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#ffffff' },
+  questionItemActive: { backgroundColor: '#ecfdf5' },
+  questionText: { flex: 1, fontWeight: 'bold', color: '#64748b', fontSize: 14, marginRight: 8 },
+  questionTextActive: { color: '#047857' },
+
+  modalInput: { backgroundColor: '#ffffff', borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 16, padding: 16, fontWeight: 'bold', color: '#0f172a', fontSize: 18, marginBottom: 32 },
+  modalSaveBtn: { backgroundColor: '#059669', height: 64, borderRadius: 16, alignItems: 'center', justifyContent: 'center', shadowColor: '#a7f3d0', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 10 },
+  modalSaveBtnText: { color: '#ffffff', fontWeight: '900', fontSize: 16, textTransform: 'uppercase', letterSpacing: 1 },
+
+  // Logout Confirmation Modal
+  logoutOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.6)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  logoutModalContent: { backgroundColor: '#ffffff', borderRadius: 32, padding: 32, width: '100%', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 },
+  logoutIconBox: { width: 64, height: 64, backgroundColor: '#fef2f2', borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  logoutModalTitle: { fontSize: 24, fontWeight: '900', color: '#0f172a', marginBottom: 12 },
+  logoutModalText: { fontSize: 14, color: '#64748b', textAlign: 'center', marginBottom: 32, lineHeight: 22, fontWeight: '500' },
+  logoutBtnRow: { flexDirection: 'row', gap: 12, width: '100%' },
+  logoutCancelBtn: { flex: 1, backgroundColor: '#f8fafc', paddingVertical: 16, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#f1f5f9' },
+  logoutCancelBtnText: { color: '#64748b', fontWeight: 'bold', fontSize: 14 },
+  logoutConfirmBtn: { flex: 1, backgroundColor: '#ef4444', paddingVertical: 16, borderRadius: 16, alignItems: 'center', shadowColor: '#fca5a5', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 8, elevation: 5 },
+  logoutConfirmBtnText: { color: '#ffffff', fontWeight: 'bold', fontSize: 14 }
+});
