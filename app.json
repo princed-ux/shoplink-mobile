@@ -22,12 +22,12 @@
       "package": "com.shoplink.mobile",
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo.png",
+        "foregroundImage": "./assets/favicon.png",
         "backgroundColor": "#ffffff"
       }
     },
     "web": {
-      "favicon": "./assets/logo.png",
+      "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
     "extra": {
