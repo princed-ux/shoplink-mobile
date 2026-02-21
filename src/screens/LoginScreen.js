@@ -53,7 +53,7 @@ export default function LoginScreen({ navigation }) {
         <View style={styles.headerBox}>
           <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
           <Text style={styles.title}>ShopLink.vi</Text>
-          <Text style={styles.subtitle}>Manager Portal - LIVE TEST!</Text>
+          <Text style={styles.subtitle}>Manager Portal</Text>
         </View>
 
         <View style={styles.formBox}>
