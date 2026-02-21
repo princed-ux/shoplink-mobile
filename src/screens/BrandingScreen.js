@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, Image, ScrollView, 
-  ActivityIndicator, Platform, Linking, Modal, Animated, StyleSheet 
+  ActivityIndicator, Platform, Linking, Modal, Animated, StyleSheet, KeyboardAvoidingView 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -167,116 +167,122 @@ export default function BrandingScreen({ navigation }) {
   const hasSecurityQuestion = !!user?.vendor?.security_question;
 
   return (
-    // 1. ADDED edges TO PREVENT THE BOTTOM BOUNCE BUG
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    // Fixed SafeAreaView: No edges prop so bottom navigation bar is protected
+    <SafeAreaView style={styles.container}>
       <FallingBackground />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        
-        <Text style={styles.pageTitle}>Settings</Text>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          
+          <Text style={styles.pageTitle}>Settings</Text>
 
-        {/* --- SECTION 1: LIVE STORE PREVIEW --- */}
-        <TouchableOpacity onPress={openLiveStore} style={styles.liveStoreCard}>
-          <View>
-             <Text style={styles.liveStoreLabel}>Public Storefront</Text>
-             <Text style={styles.liveStoreTitle}>View Live Shop</Text>
-          </View>
-          <View style={styles.liveStoreIconBox}>
-             <Globe size={24} color="white" />
-          </View>
-        </TouchableOpacity>
+          {/* --- SECTION 1: LIVE STORE PREVIEW --- */}
+          <TouchableOpacity onPress={openLiveStore} style={styles.liveStoreCard}>
+            <View>
+               <Text style={styles.liveStoreLabel}>Public Storefront</Text>
+               <Text style={styles.liveStoreTitle}>View Live Shop</Text>
+            </View>
+            <View style={styles.liveStoreIconBox}>
+               <Globe size={24} color="white" />
+            </View>
+          </TouchableOpacity>
 
-        {/* --- SECTION 2: BRANDING --- */}
-        <View style={styles.brandingCard}>
-          <View style={styles.cardHeader}>
-            <User size={24} color="#3b82f6" style={{ marginRight: 12 }} />
-            <Text style={styles.cardTitle}>Store Branding</Text>
-          </View>
+          {/* --- SECTION 2: BRANDING --- */}
+          <View style={styles.brandingCard}>
+            <View style={styles.cardHeader}>
+              <User size={24} color="#3b82f6" style={{ marginRight: 12 }} />
+              <Text style={styles.cardTitle}>Store Branding</Text>
+            </View>
 
-          <View style={styles.avatarContainer}>
-            <TouchableOpacity onPress={pickImage} style={styles.avatarWrapper}>
-              {logo ? (
-                <Image source={{ uri: logo }} style={styles.avatarImage} />
-              ) : (
-                <View style={styles.avatarPlaceholder}>
-                   <Camera size={32} color="#94a3b8" />
+            <View style={styles.avatarContainer}>
+              <TouchableOpacity onPress={pickImage} style={styles.avatarWrapper}>
+                {logo ? (
+                  <Image source={{ uri: logo }} style={styles.avatarImage} />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                     <Camera size={32} color="#94a3b8" />
+                  </View>
+                )}
+                <View style={styles.avatarEditBadge}>
+                   <Camera size={14} color="white" />
                 </View>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.inputLabel}>Shop Name</Text>
+            <TextInput 
+              value={shopName}
+              onChangeText={setShopName}
+              style={styles.textInput}
+              placeholder="Enter Shop Name"
+              placeholderTextColor="#cbd5e1"
+
+              // --- AUTOFILL ARMOR (Embracing it for name) ---
+              autoComplete="name"
+              importantForAutofill="yes"
+              textContentType="name"
+              returnKeyType="done"
+            />
+
+            <TouchableOpacity onPress={handleUpdateProfile} disabled={loading} style={styles.saveBtn}>
+              {loading ? <ActivityIndicator color="white" /> : (
+                <>
+                  <Save size={20} color="white" style={{ marginRight: 8 }} />
+                  <Text style={styles.saveBtnText}>Save Branding</Text>
+                </>
               )}
-              <View style={styles.avatarEditBadge}>
-                 <Camera size={14} color="white" />
-              </View>
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.inputLabel}>Shop Name</Text>
-          <TextInput 
-            value={shopName}
-            onChangeText={setShopName}
-            style={Platform.OS === 'web' ? [styles.textInput, { outlineStyle: 'none' }] : styles.textInput}
-            placeholder="Enter Shop Name"
-            placeholderTextColor="#cbd5e1"
+          {/* --- SECTION 3: ACCOUNT & SECURITY --- */}
+          <View style={[styles.securityCard, !hasSecurityQuestion ? styles.securityCardWarning : styles.securityCardSafe]}>
+             <View style={styles.securityHeaderRow}>
+                <View style={styles.rowCenter}>
+                   <ShieldCheck size={24} color={!hasSecurityQuestion ? "#ef4444" : "#10b981"} style={{ marginRight: 12 }} />
+                   <Text style={styles.cardTitle}>Account Security</Text>
+                </View>
+                
+                {!hasSecurityQuestion ? (
+                    <View style={styles.warningBadge}>
+                        <Animated.View style={[styles.pulsingDot, { transform: [{ scale: pulseAnim }] }]} />
+                        <Text style={styles.warningBadgeText}>Action Needed</Text>
+                    </View>
+                ) : (
+                    <View style={styles.safeBadge}>
+                        <Check size={12} color="#10b981" style={{ marginRight: 4 }}/>
+                        <Text style={styles.safeBadgeText}>Secured</Text>
+                    </View>
+                )}
+             </View>
 
-            // --- THE ARMOR ---
-            autoComplete="off"
-            importantForAutofill="no"
-            textContentType="none"
-          />
+             <View style={styles.phoneBox}>
+                 <Text style={styles.phoneLabel}>Phone Number</Text>
+                 <Text style={styles.phoneText}>{user?.vendor?.phone || "Loading..."}</Text>
+             </View>
 
-          <TouchableOpacity onPress={handleUpdateProfile} disabled={loading} style={styles.saveBtn}>
-            {loading ? <ActivityIndicator color="white" /> : (
-              <>
-                <Save size={20} color="white" style={{ marginRight: 8 }} />
-                <Text style={styles.saveBtnText}>Save Branding</Text>
-              </>
-            )}
+             {/* ONLY SHOW BUTTON IF THEY HAVEN'T SET IT UP */}
+             {!hasSecurityQuestion && (
+                 <TouchableOpacity 
+                   onPress={() => setSecurityModalVisible(true)}
+                   style={styles.actionNeededBtn}
+                 >
+                   <Lock size={18} color="#ef4444" style={{ marginRight: 8 }} />
+                   <Text style={styles.actionNeededBtnText}>Protect Your Account Now</Text>
+                 </TouchableOpacity>
+             )}
+          </View>
+
+          {/* --- LOGOUT BUTTON --- */}
+          <TouchableOpacity onPress={() => setLogoutModalVisible(true)} style={styles.logoutBtn}>
+            <LogOut size={20} color="#ef4444" />
+            <Text style={styles.logoutBtnText}>Sign Out</Text>
           </TouchableOpacity>
-        </View>
 
-        {/* --- SECTION 3: ACCOUNT & SECURITY --- */}
-        <View style={[styles.securityCard, !hasSecurityQuestion ? styles.securityCardWarning : styles.securityCardSafe]}>
-           <View style={styles.securityHeaderRow}>
-              <View style={styles.rowCenter}>
-                 <ShieldCheck size={24} color={!hasSecurityQuestion ? "#ef4444" : "#10b981"} style={{ marginRight: 12 }} />
-                 <Text style={styles.cardTitle}>Account Security</Text>
-              </View>
-              
-              {!hasSecurityQuestion ? (
-                  <View style={styles.warningBadge}>
-                      <Animated.View style={[styles.pulsingDot, { transform: [{ scale: pulseAnim }] }]} />
-                      <Text style={styles.warningBadgeText}>Action Needed</Text>
-                  </View>
-              ) : (
-                  <View style={styles.safeBadge}>
-                      <Check size={12} color="#10b981" style={{ marginRight: 4 }}/>
-                      <Text style={styles.safeBadgeText}>Secured</Text>
-                  </View>
-              )}
-           </View>
-
-           <View style={styles.phoneBox}>
-               <Text style={styles.phoneLabel}>Phone Number</Text>
-               <Text style={styles.phoneText}>{user?.vendor?.phone || "Loading..."}</Text>
-           </View>
-
-           {/* ONLY SHOW BUTTON IF THEY HAVEN'T SET IT UP */}
-           {!hasSecurityQuestion && (
-               <TouchableOpacity 
-                 onPress={() => setSecurityModalVisible(true)}
-                 style={styles.actionNeededBtn}
-               >
-                 <Lock size={18} color="#ef4444" style={{ marginRight: 8 }} />
-                 <Text style={styles.actionNeededBtnText}>Protect Your Account Now</Text>
-               </TouchableOpacity>
-           )}
-        </View>
-
-        {/* --- LOGOUT BUTTON --- */}
-        <TouchableOpacity onPress={() => setLogoutModalVisible(true)} style={styles.logoutBtn}>
-          <LogOut size={20} color="#ef4444" />
-          <Text style={styles.logoutBtnText}>Sign Out</Text>
-        </TouchableOpacity>
-
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* --- SECURITY MODAL --- */}
       <Modal visible={securityModalVisible} animationType="slide" presentationStyle="pageSheet">
@@ -287,43 +293,48 @@ export default function BrandingScreen({ navigation }) {
                </TouchableOpacity>
             </View>
 
-            {/* 2. ADDED keyboardShouldPersistTaps TO THE MODAL SCROLLVIEW */}
-            <ScrollView contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled">
-               <Text style={styles.modalTitle}>Security Settings</Text>
-               <Text style={styles.modalSubtitle}>Set a recovery question. This is the ONLY way to recover your account if you lose your password.</Text>
-               
-               <Text style={styles.inputLabel}>Select a Question</Text>
-               <View style={styles.questionList}>
-                  {SECURITY_QUESTIONS.map((q, i) => (
-                      <TouchableOpacity 
-                        key={i} 
-                        onPress={() => setSecurityQuestion(q)} 
-                        style={[styles.questionItem, securityQuestion === q && styles.questionItemActive]}
-                      >
-                          <Text style={[styles.questionText, securityQuestion === q && styles.questionTextActive]}>{q}</Text>
-                          {securityQuestion === q && <Check size={16} color="#047857" />}
-                      </TouchableOpacity>
-                  ))}
-               </View>
+            <KeyboardAvoidingView 
+              style={{ flex: 1 }} 
+              behavior={Platform.OS === "ios" ? "padding" : undefined}
+            >
+              <ScrollView contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled">
+                 <Text style={styles.modalTitle}>Security Settings</Text>
+                 <Text style={styles.modalSubtitle}>Set a recovery question. This is the ONLY way to recover your account if you lose your password.</Text>
+                 
+                 <Text style={styles.inputLabel}>Select a Question</Text>
+                 <View style={styles.questionList}>
+                    {SECURITY_QUESTIONS.map((q, i) => (
+                        <TouchableOpacity 
+                          key={i} 
+                          onPress={() => setSecurityQuestion(q)} 
+                          style={[styles.questionItem, securityQuestion === q && styles.questionItemActive]}
+                        >
+                            <Text style={[styles.questionText, securityQuestion === q && styles.questionTextActive]}>{q}</Text>
+                            {securityQuestion === q && <Check size={16} color="#047857" />}
+                        </TouchableOpacity>
+                    ))}
+                 </View>
 
-               <Text style={styles.inputLabel}>Your Answer</Text>
-               <TextInput 
-                  value={securityAnswer}
-                  onChangeText={setSecurityAnswer}
-                  style={Platform.OS === 'web' ? [styles.modalInput, { outlineStyle: 'none' }] : styles.modalInput}
-                  placeholder="Type your secret answer..."
-                  placeholderTextColor="#cbd5e1"
+                 <Text style={styles.inputLabel}>Your Answer</Text>
+                 <TextInput 
+                    value={securityAnswer}
+                    onChangeText={setSecurityAnswer}
+                    style={styles.modalInput}
+                    placeholder="Type your secret answer..."
+                    placeholderTextColor="#cbd5e1"
 
-                  // --- THE ARMOR ---
-                  autoComplete="off"
-                  importantForAutofill="no"
-                  textContentType="none"
-               />
+                    // --- AUTOFILL ARMOR (Disabled for custom security question) ---
+                    autoComplete="off"
+                    importantForAutofill="no"
+                    textContentType="none"
+                    returnKeyType="done"
+                 />
 
-               <TouchableOpacity onPress={handleUpdateSecurity} disabled={secLoading} style={styles.modalSaveBtn}>
-                  {secLoading ? <ActivityIndicator color="white" /> : <Text style={styles.modalSaveBtnText}>Save & Protect</Text>}
-               </TouchableOpacity>
-            </ScrollView>
+                 <TouchableOpacity onPress={handleUpdateSecurity} disabled={secLoading} style={styles.modalSaveBtn}>
+                    {secLoading ? <ActivityIndicator color="white" /> : <Text style={styles.modalSaveBtnText}>Save & Protect</Text>}
+                 </TouchableOpacity>
+              </ScrollView>
+            </KeyboardAvoidingView>
          </View>
       </Modal>
 
@@ -355,7 +366,7 @@ export default function BrandingScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc', position: 'relative' },
-  scrollContent: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 120 }, // Added padding for floating tab bar
+  scrollContent: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 120 }, 
   pageTitle: { fontSize: 30, fontWeight: '900', color: '#0f172a', marginBottom: 32 },
   rowCenter: { flexDirection: 'row', alignItems: 'center' },
 
@@ -379,7 +390,9 @@ const styles = StyleSheet.create({
 
   // Form Inputs
   inputLabel: { color: '#64748b', fontWeight: 'bold', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, marginLeft: 4 },
-  textInput: { backgroundColor: '#f8fafc', borderWidth: 2, borderColor: '#f1f5f9', borderRadius: 16, padding: 16, fontWeight: 'bold', color: '#0f172a', fontSize: 16, marginBottom: 24 },
+  
+  // Cleaned up input text rules to match the working version
+  textInput: { backgroundColor: '#f8fafc', borderWidth: 2, borderColor: '#f1f5f9', borderRadius: 16, padding: 16, fontWeight: 'bold', color: '#0f172a', fontSize: 16, marginBottom: 24, ...(Platform.OS === 'web' && { outlineStyle: 'none' }) },
   
   saveBtn: { backgroundColor: '#0f172a', height: 56, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', shadowColor: '#0f172a', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
   saveBtnText: { color: '#ffffff', fontWeight: '900', fontSize: 16 },
@@ -423,7 +436,9 @@ const styles = StyleSheet.create({
   questionText: { flex: 1, fontWeight: 'bold', color: '#64748b', fontSize: 14, marginRight: 8 },
   questionTextActive: { color: '#047857' },
 
-  modalInput: { backgroundColor: '#ffffff', borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 16, padding: 16, fontWeight: 'bold', color: '#0f172a', fontSize: 18, marginBottom: 32 },
+  // Cleaned up modal input text rules
+  modalInput: { backgroundColor: '#ffffff', borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 16, padding: 16, fontWeight: 'bold', color: '#0f172a', fontSize: 18, marginBottom: 32, ...(Platform.OS === 'web' && { outlineStyle: 'none' }) },
+  
   modalSaveBtn: { backgroundColor: '#059669', height: 64, borderRadius: 16, alignItems: 'center', justifyContent: 'center', shadowColor: '#a7f3d0', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 10 },
   modalSaveBtnText: { color: '#ffffff', fontWeight: '900', fontSize: 16, textTransform: 'uppercase', letterSpacing: 1 },
 

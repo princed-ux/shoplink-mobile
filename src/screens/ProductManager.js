@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { 
   View, Text, FlatList, TouchableOpacity, Image, Modal, 
-  TextInput, ActivityIndicator, Platform, ScrollView, Animated, Easing, Dimensions, StyleSheet
+  TextInput, ActivityIndicator, Platform, ScrollView, Animated, Easing, Dimensions, StyleSheet, KeyboardAvoidingView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, Trash2, X, Upload, Tag, FileText, Edit2, Package } from 'lucide-react-native';
@@ -53,7 +53,7 @@ const AuroraBackground = () => {
 
 export default function ProductManager() {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true); // <--- Set to true initially so it loads immediately on mount
+  const [loading, setLoading] = useState(true); 
   const [modalVisible, setModalVisible] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [user, setUser] = useState(null);
@@ -90,12 +90,10 @@ export default function ProductManager() {
       const userData = JSON.parse(jsonValue);
       setUser(userData);
 
-      // --- THE FIX: Use the secure /me endpoint instead of the public shop link! ---
       const res = await axios.get(`${API_URL}/api/vendor/me`, {
           headers: { Authorization: userData.token }
       });
       
-      // Update the products list from the secure response
       setProducts(res.data.products || []);
       
     } catch (error) {
@@ -192,8 +190,8 @@ export default function ProductManager() {
   return (
     <View style={styles.mainContainer}>
       <AuroraBackground />
-      {/* 1. Added edges here to stop the layout jump */}
-      <SafeAreaView style={styles.flex1} edges={['top', 'left', 'right']}>
+      {/* SafeAreaView fixed: No edges prop so bottom is protected */}
+      <SafeAreaView style={styles.flex1}>
           <View style={styles.headerContainer}>
             <View>
               <Text style={styles.headerSubText}>Management</Text>
@@ -209,18 +207,16 @@ export default function ProductManager() {
             keyExtractor={(item) => item.id.toString()}
             renderItem={renderProduct}
             contentContainerStyle={styles.listContent}
-            refreshing={loading && products.length > 0} // Only show top spinner if pulling to refresh existing list
+            refreshing={loading && products.length > 0} 
             onRefresh={loadData}
             ListEmptyComponent={
                 loading ? (
-                    // --- LOADING STATE ---
                     <View style={styles.emptyContainer}>
                         <ActivityIndicator size="large" color="#059669" style={{ marginBottom: 24, transform: [{ scale: 1.5 }] }} />
                         <Text style={styles.emptyTitle}>Loading Inventory...</Text>
                         <Text style={styles.emptyDesc}>Please wait while we arrange your shelf.</Text>
                     </View>
                 ) : (
-                    // --- EMPTY SHELF STATE ---
                     <View style={styles.emptyContainer}>
                         <View style={styles.emptyIconBox}><Package size={50} color="#cbd5e1" /></View>
                         <Text style={styles.emptyTitle}>Shelf is Empty</Text>
@@ -243,95 +239,103 @@ export default function ProductManager() {
              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalCloseBtn}><X size={20} color="#64748b" /></TouchableOpacity>
           </View>
 
-          {/* 2. Added keyboardShouldPersistTaps */}
-          <ScrollView style={styles.flex1} contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled">
-             <TouchableOpacity onPress={pickImage} style={styles.imagePickerBox}>
-                {image ? <Image source={{ uri: image }} style={styles.imageFull} resizeMode="cover" /> : (
-                  <View style={{ alignItems: 'center' }}>
-                    <View style={styles.imageIconBox}><Upload size={24} color="#059669"/></View>
-                    <Text style={styles.imagePickerTitle}>Upload Image</Text>
-                    <Text style={styles.imagePickerSub}>Tap to select</Text>
-                  </View>
-                )}
-             </TouchableOpacity>
-
-             <View style={styles.formGroup}>
-                 
-                 {/* NAME INPUT */}
-                 <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Product Name</Text>
-                    <View style={getContainerStyle('name')}>
-                        <Tag size={20} color={activeInput === 'name' ? "#10b981" : "#94a3b8"} style={styles.inputIcon} />
-                        <TextInput 
-                          placeholder="e.g. Nike Air Max" 
-                          value={name} 
-                          onChangeText={setName} 
-                          onFocus={() => setActiveInput('name')}
-                          onBlur={() => setActiveInput(null)}
-                          style={Platform.OS === 'web' ? [styles.inputText, { outlineStyle: 'none' }] : styles.inputText}
-                          placeholderTextColor="#cbd5e1"
-                          
-                          // --- THE ARMOR ---
-                          autoComplete="off"
-                          importantForAutofill="no"
-                          textContentType="none"
-                        />
+          {/* KeyboardAvoidingView wrapping the Modal ScrollView */}
+          <KeyboardAvoidingView 
+            style={{ flex: 1 }} 
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+          >
+            <ScrollView style={styles.flex1} contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled">
+               <TouchableOpacity onPress={pickImage} style={styles.imagePickerBox}>
+                  {image ? <Image source={{ uri: image }} style={styles.imageFull} resizeMode="cover" /> : (
+                    <View style={{ alignItems: 'center' }}>
+                      <View style={styles.imageIconBox}><Upload size={24} color="#059669"/></View>
+                      <Text style={styles.imagePickerTitle}>Upload Image</Text>
+                      <Text style={styles.imagePickerSub}>Tap to select</Text>
                     </View>
-                 </View>
+                  )}
+               </TouchableOpacity>
 
-                 {/* PRICE INPUT */}
-                 <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Price (₦)</Text>
-                    <View style={getContainerStyle('price')}>
-                        <Text style={[styles.priceSymbol, activeInput === 'price' ? styles.priceSymbolActive : styles.priceSymbolInactive]}>₦</Text>
-                        <TextInput 
-                          placeholder="0.00" 
-                          value={price} 
-                          onChangeText={setPrice} 
-                          onFocus={() => setActiveInput('price')}
-                          onBlur={() => setActiveInput(null)}
-                          keyboardType="numeric"
-                          style={Platform.OS === 'web' ? [styles.inputText, { outlineStyle: 'none' }] : styles.inputText}
-                          placeholderTextColor="#cbd5e1"
+               <View style={styles.formGroup}>
+                   
+                   {/* NAME INPUT */}
+                   <View style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>Product Name</Text>
+                      <View style={getContainerStyle('name')}>
+                          <Tag size={20} color={activeInput === 'name' ? "#10b981" : "#94a3b8"} style={styles.inputIcon} />
+                          <TextInput 
+                            placeholder="e.g. Nike Air Max" 
+                            value={name} 
+                            onChangeText={setName} 
+                            onFocus={() => setActiveInput('name')}
+                            onBlur={() => setActiveInput(null)}
+                            style={styles.input}
+                            placeholderTextColor="#cbd5e1"
+                            
+                            // --- AUTOFILL ARMOR ---
+                            autoComplete="off"
+                            importantForAutofill="no"
+                            textContentType="none"
+                            returnKeyType="next"
+                          />
+                      </View>
+                   </View>
 
-                          // --- THE ARMOR ---
-                          autoComplete="off"
-                          importantForAutofill="no"
-                          textContentType="none"
-                        />
-                    </View>
-                 </View>
+                   {/* PRICE INPUT */}
+                   <View style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>Price (₦)</Text>
+                      <View style={getContainerStyle('price')}>
+                          <Text style={[styles.priceSymbol, activeInput === 'price' ? styles.priceSymbolActive : styles.priceSymbolInactive]}>₦</Text>
+                          <TextInput 
+                            placeholder="0.00" 
+                            value={price} 
+                            onChangeText={setPrice} 
+                            onFocus={() => setActiveInput('price')}
+                            onBlur={() => setActiveInput(null)}
+                            keyboardType="numeric"
+                            style={styles.input}
+                            placeholderTextColor="#cbd5e1"
 
-                 {/* DESCRIPTION INPUT */}
-                 <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Details</Text>
-                    <View style={getContainerStyle('desc', true)}>
-                        <FileText size={20} color={activeInput === 'desc' ? "#10b981" : "#94a3b8"} style={styles.textAreaIcon} />
-                        <TextInput 
-                          placeholder="Describe your product..." 
-                          value={description} 
-                          onChangeText={setDescription} 
-                          onFocus={() => setActiveInput('desc')}
-                          onBlur={() => setActiveInput(null)}
-                          multiline
-                          textAlignVertical="top"
-                          style={Platform.OS === 'web' ? [styles.textAreaInput, { outlineStyle: 'none' }] : styles.textAreaInput}
-                          placeholderTextColor="#cbd5e1"
+                            // --- AUTOFILL ARMOR ---
+                            autoComplete="off"
+                            importantForAutofill="no"
+                            textContentType="none"
+                            returnKeyType="next"
+                          />
+                      </View>
+                   </View>
 
-                          // --- THE ARMOR ---
-                          autoComplete="off"
-                          importantForAutofill="no"
-                          textContentType="none"
-                        />
-                    </View>
-                 </View>
-             </View>
+                   {/* DESCRIPTION INPUT */}
+                   <View style={styles.inputGroup}>
+                      <Text style={styles.inputLabel}>Details</Text>
+                      <View style={getContainerStyle('desc', true)}>
+                          <FileText size={20} color={activeInput === 'desc' ? "#10b981" : "#94a3b8"} style={styles.textAreaIcon} />
+                          <TextInput 
+                            placeholder="Describe your product..." 
+                            value={description} 
+                            onChangeText={setDescription} 
+                            onFocus={() => setActiveInput('desc')}
+                            onBlur={() => setActiveInput(null)}
+                            multiline
+                            textAlignVertical="top"
+                            style={styles.textAreaInput}
+                            placeholderTextColor="#cbd5e1"
 
-             <TouchableOpacity onPress={handleSubmit} disabled={uploading} style={styles.submitBtn}>
-               {uploading ? <ActivityIndicator color="white" /> : <Text style={styles.submitBtnText}>{isEditing ? 'Save Changes' : 'Add to Inventory'}</Text>}
-             </TouchableOpacity>
+                            // --- AUTOFILL ARMOR ---
+                            autoComplete="off"
+                            importantForAutofill="no"
+                            textContentType="none"
+                            returnKeyType="done"
+                          />
+                      </View>
+                   </View>
+               </View>
 
-          </ScrollView>
+               <TouchableOpacity onPress={handleSubmit} disabled={uploading} style={styles.submitBtn}>
+                 {uploading ? <ActivityIndicator color="white" /> : <Text style={styles.submitBtnText}>{isEditing ? 'Save Changes' : 'Add to Inventory'}</Text>}
+               </TouchableOpacity>
+
+            </ScrollView>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     </View>
@@ -359,9 +363,9 @@ const styles = StyleSheet.create({
     headerBadgeText: { color: '#0f172a', fontWeight: 'bold', fontSize: 12 },
 
     // FlatList
-    listContent: { padding: 24, paddingBottom: 180 }, // <--- Fixed for floating tab bar
+    listContent: { padding: 24, paddingBottom: 180 }, 
     
-    // Empty State (Used for both Loading and Empty)
+    // Empty State
     emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 80, opacity: 0.8 },
     emptyIconBox: { backgroundColor: '#ffffff', width: 128, height: 128, borderRadius: 64, alignItems: 'center', justifyContent: 'center', marginBottom: 24, shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2, borderWidth: 1, borderColor: '#f1f5f9' },
     emptyTitle: { color: '#0f172a', fontWeight: '900', fontSize: 20, marginBottom: 8 },
@@ -379,8 +383,8 @@ const styles = StyleSheet.create({
     actionBtnEdit: { backgroundColor: '#f8fafc', padding: 10, borderRadius: 12, borderWidth: 1, borderColor: '#f1f5f9' },
     actionBtnDelete: { backgroundColor: '#fef2f2', padding: 10, borderRadius: 12, borderWidth: 1, borderColor: '#fee2e2' },
 
-    // Floating Action Button (FAB)
-    fab: { position: 'absolute', bottom: 120, right: 24, backgroundColor: '#0f172a', width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 15, elevation: 10, zIndex: 50 }, // <--- Fixed for floating tab bar
+    // Floating Action Button
+    fab: { position: 'absolute', bottom: 120, right: 24, backgroundColor: '#0f172a', width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 15, elevation: 10, zIndex: 50 }, 
 
     // Modal Global
     modalContainer: { flex: 1, backgroundColor: '#ffffff' },
@@ -409,8 +413,10 @@ const styles = StyleSheet.create({
     
     inputIcon: { marginRight: 12 },
     textAreaIcon: { marginRight: 12, marginTop: 4 },
-    inputText: { flex: 1, fontWeight: 'bold', color: '#0f172a', fontSize: 18 },
-    textAreaInput: { flex: 1, fontWeight: 'bold', color: '#0f172a', fontSize: 16, lineHeight: 24, minHeight: 96 },
+    
+    // Cleaned up input text rules to match the working login version
+    input: { flex: 1, fontWeight: 'bold', color: '#0f172a', fontSize: 18, ...(Platform.OS === 'web' && { outlineStyle: 'none' }) },
+    textAreaInput: { flex: 1, fontWeight: 'bold', color: '#0f172a', fontSize: 16, lineHeight: 24, minHeight: 96, ...(Platform.OS === 'web' && { outlineStyle: 'none' }) },
     
     priceSymbol: { fontSize: 18, fontWeight: 'bold', marginRight: 12 },
     priceSymbolActive: { color: '#10b981' },

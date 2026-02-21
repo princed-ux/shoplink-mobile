@@ -94,7 +94,7 @@ export default function LoginScreen({ navigation }) {
               resizeMode="contain"
             />
             <Text style={styles.title}>ShopLink.vi</Text>
-            <Text style={styles.subtitle}>Manager Portal -- pro test</Text>
+            <Text style={styles.subtitle}>Manager Portal</Text>
           </View>
 
           {/* FORM */}
