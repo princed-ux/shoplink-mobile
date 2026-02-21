@@ -174,7 +174,7 @@ export default function BrandingScreen({ navigation }) {
       <FallingBackground />
 
       <KeyboardWrapper 
-        style={{ flex: 1 }} 
+  style={{ flex: 1, zIndex: 1 }} 
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -365,7 +365,10 @@ export default function BrandingScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc', position: 'relative' },
+  container: { 
+  flex: 1,
+  position: 'relative'
+},
   scrollContent: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 120 }, 
   pageTitle: { fontSize: 30, fontWeight: '900', color: '#0f172a', marginBottom: 32 },
   rowCenter: { flexDirection: 'row', alignItems: 'center' },

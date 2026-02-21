@@ -10,6 +10,7 @@ import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
 import Toast from 'react-native-toast-message';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const API_URL = 'https://api.shoplinkvi.com'; 
 
@@ -67,6 +68,9 @@ export default function ProductManager() {
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [image, setImage] = useState(null);
+
+  const insets = useSafeAreaInsets();
+
 
   const loadData = async () => {
     setLoading(true);
@@ -178,8 +182,8 @@ export default function ProductManager() {
 
   return (
     <View style={styles.mainContainer}>
-      <AuroraBackground />
-      <SafeAreaView style={styles.flex1}>
+  <SafeAreaView style={{ flex: 1 }}>
+    <AuroraBackground />
           <View style={styles.headerContainer}>
             <View>
               <Text style={styles.headerSubText}>Management</Text>
@@ -214,12 +218,20 @@ export default function ProductManager() {
             }
           />
 
-          <TouchableOpacity onPress={() => { resetForm(); setModalVisible(true); }} style={styles.fab}>
+          <TouchableOpacity
+  onPress={() => { resetForm(); setModalVisible(true); }}
+  style={[styles.fab, { bottom: insets.bottom + 110 }]}
+>
             <Plus size={32} color="white" />
           </TouchableOpacity>
       </SafeAreaView>
 
-      <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet">
+      <Modal
+  visible={modalVisible}
+  animationType="slide"
+  presentationStyle="pageSheet"
+  statusBarTranslucent
+>
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
              <Text style={styles.modalTitle}>{isEditing ? 'Edit Item' : 'New Item'}</Text>
@@ -322,7 +334,9 @@ export default function ProductManager() {
 const styles = StyleSheet.create({
     flex1: { flex: 1 },
     mainContainer: { flex: 1, backgroundColor: '#f8fafc', position: 'relative' },
-    auroraContainer: { position: 'absolute', width: width, height: height, zIndex: -1, backgroundColor: '#f8fafc' },
+    auroraContainer: {
+  ...StyleSheet.absoluteFillObject,
+},
     blob1: { position: 'absolute', top: 100, left: -50, width: 300, height: 300, backgroundColor: '#e9d5ff', borderRadius: 150, opacity: 0.5 },
     blob2: { position: 'absolute', bottom: 100, right: -50, width: 280, height: 280, backgroundColor: '#a7f3d0', borderRadius: 140, opacity: 0.5 },
     headerContainer: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
@@ -345,7 +359,18 @@ const styles = StyleSheet.create({
     productActions: { flexDirection: 'column', gap: 12, marginLeft: 8 },
     actionBtnEdit: { backgroundColor: '#f8fafc', padding: 10, borderRadius: 12, borderWidth: 1, borderColor: '#f1f5f9' },
     actionBtnDelete: { backgroundColor: '#fef2f2', padding: 10, borderRadius: 12, borderWidth: 1, borderColor: '#fee2e2' },
-    fab: { position: 'absolute', bottom: 120, right: 24, backgroundColor: '#0f172a', width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 15, elevation: 10, zIndex: 50 }, 
+    fab: {
+  position: 'absolute',
+  right: 24,
+  backgroundColor: '#0f172a',
+  width: 64,
+  height: 64,
+  borderRadius: 32,
+  alignItems: 'center',
+  justifyContent: 'center',
+  elevation: 10,
+  zIndex: 50,
+},
     modalContainer: { flex: 1, backgroundColor: '#ffffff' },
     modalHeader: { paddingHorizontal: 24, paddingVertical: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
     modalTitle: { fontSize: 20, fontWeight: '900', color: '#0f172a' },

@@ -248,7 +248,7 @@ export default function DashboardScreen({ navigation }) {
       
       {isElitePlan && <AuroraBackground />}
 
-      <SafeAreaView style={styles.flex1}>
+      <SafeAreaView style={[styles.flex1, { backgroundColor: 'transparent' }]}>
         <ScrollView 
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} 
           showsVerticalScrollIndicator={false}
@@ -490,14 +490,19 @@ const styles = StyleSheet.create({
     // Globals
     flex1: { flex: 1 },
     flex1BgWhite: { flex: 1, backgroundColor: '#ffffff' },
-    mainContainer: { flex: 1, backgroundColor: '#f8fafc', position: 'relative' },
+    mainContainer: { 
+  flex: 1,
+  position: 'relative' 
+},
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' },
     loadingText: { color: '#94a3b8', fontWeight: 'bold' },
     contentPadding: { paddingHorizontal: 24, paddingBottom: 80, gap: 24 },
     z10: { zIndex: 10 },
     
     // Aurora Background
-    auroraContainer: { position: 'absolute', width: width, height: height, zIndex: -1, backgroundColor: '#f8fafc' },
+    auroraContainer: {
+  ...StyleSheet.absoluteFillObject,
+},
     blob1: { position: 'absolute', top: -50, left: -50, width: 300, height: 300, backgroundColor: '#e9d5ff', borderRadius: 150, opacity: 0.5 },
     blob2: { position: 'absolute', top: 50, right: -50, width: 280, height: 280, backgroundColor: '#a7f3d0', borderRadius: 140, opacity: 0.5 },
 

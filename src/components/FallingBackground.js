@@ -34,15 +34,29 @@ export default function FallingBackground() {
   }, []);
 
   return (
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: -1 }}>
-      {icons.map((item) => (
-        <Animated.View 
-          key={item.id} 
-          style={{ position: 'absolute', left: item.left, transform: [{ translateY: item.anim }], opacity: 0.05 }}
-        >
-          <item.Icon size={item.size} color="#059669" />
-        </Animated.View>
-      ))}
-    </View>
-  );
+  <View
+    pointerEvents="none"
+    style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0
+    }}
+  >
+    {icons.map((item) => (
+      <Animated.View
+        key={item.id}
+        style={{
+          position: 'absolute',
+          left: item.left,
+          transform: [{ translateY: item.anim }],
+          opacity: 0.05
+        }}
+      >
+        <item.Icon size={item.size} color="#059669" />
+      </Animated.View>
+    ))}
+  </View>
+);
 }

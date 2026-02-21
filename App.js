@@ -64,36 +64,38 @@ function AppTabs() {
   return (
     <Tab.Navigator
       screenOptions={{
-        headerShown: false,
-        safeAreaInsets: { bottom: 0 }, // <--- DO NOT SKIP THIS! Keeps icons perfectly centered inside the 78px bar
-        tabBarStyle: {
-          position: "absolute",
-          bottom: floatingBottomMargin,
-          left: 20,
-          right: 20,
-          backgroundColor: "#ffffff",
-          borderRadius: 32,
-          height: 78,
-          borderTopWidth: 0,
-          elevation: 20,
-          shadowColor: "#0f172a",
-          shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.15,
-          shadowRadius: 20,
-        },
-        tabBarItemStyle: {
-          justifyContent: "center",
-          alignItems: "center",
-          paddingVertical: 8, // <--- Your clean optimization!
-        },
-        tabBarActiveTintColor: "#059669",
-        tabBarInactiveTintColor: "#94a3b8",
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: "900",
-          marginTop: 4,
-        },
-      }}
+  headerShown: false,
+  tabBarShowLabel: true,
+  tabBarLabelPosition: "below-icon",
+  safeAreaInsets: { bottom: 0 },
+  tabBarStyle: {
+    position: "absolute",
+    bottom: floatingBottomMargin,
+    left: 20,
+    right: 20,
+    backgroundColor: "#ffffff",
+    borderRadius: 32,
+    height: 78,
+    borderTopWidth: 0,
+    elevation: 20,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+  },
+  tabBarItemStyle: {
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  tabBarActiveTintColor: "#059669",
+  tabBarInactiveTintColor: "#94a3b8",
+  tabBarLabelStyle: {
+    fontSize: 10,
+    fontWeight: "900",
+    marginTop: 4,
+  },
+}}
     >
       <Tab.Screen
         name="Dashboard"

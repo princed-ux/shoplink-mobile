@@ -83,10 +83,18 @@ export default function ForgotPasswordScreen({ navigation }) {
       </View>
 
       <KeyboardAvoidingView 
-        style={{ flex: 1 }} 
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <View style={styles.centerContainer}>
+  style={{ flex: 1 }} 
+  behavior={Platform.OS === "ios" ? "padding" : undefined}
+  keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+  
+>
+        <ScrollView
+  contentContainerStyle={styles.centerContainer}
+  keyboardShouldPersistTaps="handled"
+  keyboardDismissMode="on-drag"
+  showsVerticalScrollIndicator={false}
+  bounces={false}
+>
             
             {step === 1 && (
                 <View style={styles.stepBox}>
@@ -206,7 +214,7 @@ export default function ForgotPasswordScreen({ navigation }) {
                 </View>
             )}
 
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -214,8 +222,13 @@ export default function ForgotPasswordScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff' },
-  
-  centerContainer: { flex: 1, justifyContent: "center", paddingHorizontal: 24, paddingBottom: 40 },
+
+  centerContainer: {
+  flexGrow: 1,
+  paddingHorizontal: 24,
+  paddingTop: 40,
+  paddingBottom: 80
+},
   
   headerRow: { paddingHorizontal: 24, paddingVertical: 16, alignItems: 'flex-end', zIndex: 10 },
   closeBtn: { backgroundColor: '#f1f5f9', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
