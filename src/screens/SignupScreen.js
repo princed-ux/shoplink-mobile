@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, ActivityIndicator, 
-  Platform, Image, KeyboardAvoidingView, ScrollView, Modal, StyleSheet, Keyboard
+  Platform, Image, KeyboardAvoidingView, ScrollView, Modal, StyleSheet
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -24,7 +24,7 @@ const SECURITY_QUESTIONS = [
   "What is the name of your first pet?"
 ];
 
-// THE FIX: Isolate KeyboardAvoidingView to iOS only so Android doesn't glitch!
+// NUCLEAR FIX 1: iOS gets the avoider. Android gets a completely dumb, static View.
 const KeyboardWrapper = Platform.OS === 'ios' ? KeyboardAvoidingView : View;
 
 export default function SignupScreen({ navigation }) {
@@ -34,10 +34,9 @@ export default function SignupScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showQuestionModal, setShowQuestionModal] = useState(false);
 
-  // Form State
   const [shopName, setShopName] = useState('');
   const [slug, setSlug] = useState('');
-  const [slugStatus, setSlugStatus] = useState('idle'); // idle, checking, available, taken
+  const [slugStatus, setSlugStatus] = useState('idle');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [securityQuestion, setSecurityQuestion] = useState(SECURITY_QUESTIONS[0]);
@@ -48,7 +47,6 @@ export default function SignupScreen({ navigation }) {
     activeInput === fieldName ? styles.inputActive : styles.inputInactive
   ];
 
-  // --- AUTO SLUG GENERATOR ---
   useEffect(() => {
     if (shopName) {
       const generated = shopName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -59,7 +57,6 @@ export default function SignupScreen({ navigation }) {
     }
   }, [shopName]);
 
-  // --- SLUG AVAILABILITY CHECKER ---
   useEffect(() => {
     if (!slug) {
         setSlugStatus('idle');
@@ -73,11 +70,10 @@ export default function SignupScreen({ navigation }) {
         } catch (err) {
             setSlugStatus('taken');
         }
-    }, 500); // 500ms debounce
+    }, 500); 
     return () => clearTimeout(delay);
   }, [slug]);
 
-  // --- HANDLERS ---
   const handleNextStep = async () => {
     if (!shopName || !slug || !phone || !password) return Toast.show({ type: 'error', text1: 'Please fill all fields' });
     if (slugStatus === 'taken') return Toast.show({ type: 'error', text1: 'Store Link Taken', text2: 'Please modify your shop name slightly.' });
@@ -88,7 +84,6 @@ export default function SignupScreen({ navigation }) {
     try {
         await axios.get(`${API_URL}/api/check-phone/${phone}`);
         setStep(2);
-        Keyboard.dismiss();
     } catch (err) {
         if (err.response && err.response.status === 409) {
             Toast.show({ type: 'error', text1: 'Phone Number Taken', text2: 'This number is already registered. Please Sign In.' });
@@ -131,27 +126,29 @@ export default function SignupScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    // NUCLEAR FIX 2: Locked to 'top' ONLY. Do not let SafeArea recalculate the bottom during keyboard pops!
+    <SafeAreaView style={styles.container} edges={['top']}>
       <FallingBackground />
       
       <KeyboardWrapper 
         style={{ flex: 1 }} 
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
+        {/* NUCLEAR FIX 3: Removed TouchableWithoutFeedback. ScrollView handles taps naturally. */}
         <ScrollView 
           contentContainerStyle={styles.scrollContent} 
           showsVerticalScrollIndicator={false} 
           keyboardShouldPersistTaps="handled"
+          bounces={false}
         >
           <View style={styles.headerBox}>
             <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
             <Text style={styles.title}>ShopLink.vi</Text>
-            <Text style={styles.subtitle}>Start Your Business --Test</Text>
+            <Text style={styles.subtitle}>Start Your Business  --another test</Text>
           </View>
 
           <View style={styles.formBox}>
               
-              {/* STEP 1: BASIC INFO */}
               {step === 1 && (
                   <View style={styles.stepContainer}>
                       <View style={styles.inputGroup}>
@@ -166,8 +163,6 @@ export default function SignupScreen({ navigation }) {
                                   onBlur={() => setActiveInput(null)}
                                   style={styles.input}
                                   placeholderTextColor="#cbd5e1"
-                                  
-                                  // --- AUTOFILL ARMOR (Embracing it) ---
                                   autoComplete="name"
                                   textContentType="name"
                                   importantForAutofill="yes"
@@ -190,8 +185,6 @@ export default function SignupScreen({ navigation }) {
                                   autoCapitalize="none"
                                   style={styles.input}
                                   placeholderTextColor="#cbd5e1"
-                                  
-                                  // --- AUTOFILL ARMOR (Disabled for custom link) ---
                                   autoComplete="off"
                                   importantForAutofill="no"
                                   textContentType="none"
@@ -217,8 +210,6 @@ export default function SignupScreen({ navigation }) {
                                   keyboardType="phone-pad"
                                   style={styles.input}
                                   placeholderTextColor="#cbd5e1"
-                                  
-                                  // --- AUTOFILL ARMOR (Embracing it) ---
                                   autoComplete="tel"
                                   textContentType="telephoneNumber"
                                   importantForAutofill="yes"
@@ -240,8 +231,6 @@ export default function SignupScreen({ navigation }) {
                                   secureTextEntry={!showPassword}
                                   style={styles.input}
                                   placeholderTextColor="#cbd5e1"
-                                  
-                                  // --- AUTOFILL ARMOR (Embracing it) ---
                                   autoComplete="password"
                                   textContentType="password"
                                   importantForAutofill="yes"
@@ -259,7 +248,6 @@ export default function SignupScreen({ navigation }) {
                   </View>
               )}
 
-              {/* STEP 2: SECURITY QUESTION (Restored!) */}
               {step === 2 && (
                   <View style={styles.stepContainer}>
                       <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn}>
@@ -291,8 +279,6 @@ export default function SignupScreen({ navigation }) {
                                   onBlur={() => setActiveInput(null)}
                                   style={styles.input}
                                   placeholderTextColor="#cbd5e1"
-                                  
-                                  // --- AUTOFILL ARMOR (Disabled for custom answer) ---
                                   autoComplete="off"
                                   importantForAutofill="no"
                                   textContentType="none"
@@ -313,7 +299,6 @@ export default function SignupScreen({ navigation }) {
 
           </View>
 
-          {/* FOOTER (Restored!) */}
           {step === 1 && (
               <View style={styles.footerRow}>
                 <TouchableOpacity onPress={() => navigation.navigate('Login')}>
@@ -325,7 +310,6 @@ export default function SignupScreen({ navigation }) {
         </ScrollView>
       </KeyboardWrapper>
 
-      {/* --- QUESTION PICKER MODAL (Restored!) --- */}
       <Modal visible={showQuestionModal} animationType="slide" transparent={true}>
           <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
@@ -349,7 +333,6 @@ export default function SignupScreen({ navigation }) {
               </View>
           </View>
       </Modal>
-
     </SafeAreaView>
   );
 }
@@ -357,7 +340,6 @@ export default function SignupScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff' },
   
-  // THE FIX: Standard padding, NO justifyContent center!
   scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 40, paddingBottom: 60 },
   
   headerBox: { alignItems: 'center', marginBottom: 32 },
@@ -373,8 +355,8 @@ const styles = StyleSheet.create({
   inputContainer: { borderWidth: 2, borderRadius: 16, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, height: 64 },
   inputActive: { backgroundColor: '#ffffff', borderColor: '#10b981', shadowColor: '#d1fae5', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, shadowRadius: 4, elevation: 2 },
   inputInactive: { backgroundColor: '#f8fafc', borderColor: '#f1f5f9' },
-  
   icon: { marginRight: 12 },
+  
   input: { flex: 1, fontWeight: 'bold', color: '#0f172a', fontSize: 16, ...(Platform.OS === 'web' && { outlineStyle: 'none' }) },
   prefixText: { color: '#94a3b8', fontWeight: 'bold', fontSize: 16, marginRight: 2 },
   errorText: { color: '#ef4444', fontSize: 10, fontWeight: 'bold', marginTop: 4, marginLeft: 4 },
@@ -389,7 +371,6 @@ const styles = StyleSheet.create({
   footerText: { color: '#64748b', fontWeight: '500' },
   footerTextBold: { color: '#047857', fontWeight: '900' },
 
-  // Step 2 Specifics
   backBtn: { alignSelf: 'flex-start', marginBottom: 8, backgroundColor: '#f1f5f9', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   backBtnText: { color: '#64748b', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 },
   securityHeader: { alignItems: 'center', marginBottom: 16 },
@@ -400,7 +381,6 @@ const styles = StyleSheet.create({
   questionSelector: { backgroundColor: '#f8fafc', borderWidth: 2, borderColor: '#f1f5f9', borderRadius: 16, height: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
   questionSelectorText: { flex: 1, color: '#0f172a', fontWeight: 'bold', fontSize: 14, marginRight: 8 },
 
-  // Modal Styles
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: '#ffffff', borderTopLeftRadius: 32, borderTopRightRadius: 32, maxHeight: '80%', paddingBottom: 40 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 24, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
