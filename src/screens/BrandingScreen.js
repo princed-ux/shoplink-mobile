@@ -24,6 +24,9 @@ const SECURITY_QUESTIONS = [
   "What is the name of your first pet?"
 ];
 
+// NUCLEAR FIX: Isolate KeyboardAvoidingView to iOS.
+const KeyboardWrapper = Platform.OS === 'ios' ? KeyboardAvoidingView : View;
+
 export default function BrandingScreen({ navigation }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -167,11 +170,10 @@ export default function BrandingScreen({ navigation }) {
   const hasSecurityQuestion = !!user?.vendor?.security_question;
 
   return (
-    // Fixed SafeAreaView: No edges prop so bottom navigation bar is protected
     <SafeAreaView style={styles.container}>
       <FallingBackground />
 
-      <KeyboardAvoidingView 
+      <KeyboardWrapper 
         style={{ flex: 1 }} 
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
@@ -219,8 +221,6 @@ export default function BrandingScreen({ navigation }) {
               style={styles.textInput}
               placeholder="Enter Shop Name"
               placeholderTextColor="#cbd5e1"
-
-              // --- AUTOFILL ARMOR (Embracing it for name) ---
               autoComplete="name"
               importantForAutofill="yes"
               textContentType="name"
@@ -263,7 +263,6 @@ export default function BrandingScreen({ navigation }) {
                  <Text style={styles.phoneText}>{user?.vendor?.phone || "Loading..."}</Text>
              </View>
 
-             {/* ONLY SHOW BUTTON IF THEY HAVEN'T SET IT UP */}
              {!hasSecurityQuestion && (
                  <TouchableOpacity 
                    onPress={() => setSecurityModalVisible(true)}
@@ -282,59 +281,60 @@ export default function BrandingScreen({ navigation }) {
           </TouchableOpacity>
 
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardWrapper>
 
-      {/* --- SECURITY MODAL --- */}
-      <Modal visible={securityModalVisible} animationType="slide" presentationStyle="pageSheet">
-         <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-               <TouchableOpacity onPress={() => setSecurityModalVisible(false)} style={styles.closeBtn}>
-                  <Text style={styles.closeBtnText}>Close</Text>
-               </TouchableOpacity>
-            </View>
+      {/* --- SECURITY MODAL (NOW SCROLLVIEW FREE) --- */}
+      <Modal visible={securityModalVisible} animationType="slide" transparent={true}>
+         <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>Security Settings</Text>
+                    <TouchableOpacity onPress={() => setSecurityModalVisible(false)} style={styles.closeBtn}>
+                        <X size={20} color="#64748b" />
+                    </TouchableOpacity>
+                </View>
 
-            <KeyboardAvoidingView 
-              style={{ flex: 1 }} 
-              behavior={Platform.OS === "ios" ? "padding" : undefined}
-            >
-              <ScrollView contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled">
-                 <Text style={styles.modalTitle}>Security Settings</Text>
-                 <Text style={styles.modalSubtitle}>Set a recovery question. This is the ONLY way to recover your account if you lose your password.</Text>
-                 
-                 <Text style={styles.inputLabel}>Select a Question</Text>
-                 <View style={styles.questionList}>
-                    {SECURITY_QUESTIONS.map((q, i) => (
-                        <TouchableOpacity 
-                          key={i} 
-                          onPress={() => setSecurityQuestion(q)} 
-                          style={[styles.questionItem, securityQuestion === q && styles.questionItemActive]}
-                        >
-                            <Text style={[styles.questionText, securityQuestion === q && styles.questionTextActive]}>{q}</Text>
-                            {securityQuestion === q && <Check size={16} color="#047857" />}
+                <KeyboardWrapper 
+                    style={{ flex: 1 }} 
+                    behavior={Platform.OS === "ios" ? "padding" : undefined}
+                >
+                    {/* NUCLEAR FIX: Completely replaced ScrollView with a standard View */}
+                    <View style={styles.modalBody}>
+                        <Text style={styles.modalSubtitle}>Set a recovery question. This is the ONLY way to recover your account if you lose your password.</Text>
+                        
+                        <Text style={styles.inputLabel}>Select a Question</Text>
+                        <View style={styles.questionList}>
+                            {SECURITY_QUESTIONS.map((q, i) => (
+                                <TouchableOpacity 
+                                    key={i} 
+                                    onPress={() => setSecurityQuestion(q)} 
+                                    style={[styles.questionItem, securityQuestion === q && styles.questionItemActive]}
+                                >
+                                    <Text style={[styles.questionText, securityQuestion === q && styles.questionTextActive]}>{q}</Text>
+                                    {securityQuestion === q && <Check size={16} color="#047857" />}
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <Text style={styles.inputLabel}>Your Answer</Text>
+                        <TextInput 
+                            value={securityAnswer}
+                            onChangeText={setSecurityAnswer}
+                            style={styles.modalInput}
+                            placeholder="Type your secret answer..."
+                            placeholderTextColor="#cbd5e1"
+                            autoComplete="off"
+                            importantForAutofill="no"
+                            textContentType="none"
+                            returnKeyType="done"
+                        />
+
+                        <TouchableOpacity onPress={handleUpdateSecurity} disabled={secLoading} style={styles.modalSaveBtn}>
+                            {secLoading ? <ActivityIndicator color="white" /> : <Text style={styles.modalSaveBtnText}>Save & Protect</Text>}
                         </TouchableOpacity>
-                    ))}
-                 </View>
-
-                 <Text style={styles.inputLabel}>Your Answer</Text>
-                 <TextInput 
-                    value={securityAnswer}
-                    onChangeText={setSecurityAnswer}
-                    style={styles.modalInput}
-                    placeholder="Type your secret answer..."
-                    placeholderTextColor="#cbd5e1"
-
-                    // --- AUTOFILL ARMOR (Disabled for custom security question) ---
-                    autoComplete="off"
-                    importantForAutofill="no"
-                    textContentType="none"
-                    returnKeyType="done"
-                 />
-
-                 <TouchableOpacity onPress={handleUpdateSecurity} disabled={secLoading} style={styles.modalSaveBtn}>
-                    {secLoading ? <ActivityIndicator color="white" /> : <Text style={styles.modalSaveBtnText}>Save & Protect</Text>}
-                 </TouchableOpacity>
-              </ScrollView>
-            </KeyboardAvoidingView>
+                    </View>
+                </KeyboardWrapper>
+            </View>
          </View>
       </Modal>
 
@@ -370,40 +370,32 @@ const styles = StyleSheet.create({
   pageTitle: { fontSize: 30, fontWeight: '900', color: '#0f172a', marginBottom: 32 },
   rowCenter: { flexDirection: 'row', alignItems: 'center' },
 
-  // Live Store Card
   liveStoreCard: { backgroundColor: '#059669', padding: 24, borderRadius: 24, marginBottom: 32, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', shadowColor: '#a7f3d0', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 10 },
   liveStoreLabel: { color: '#d1fae5', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
   liveStoreTitle: { color: '#ffffff', fontSize: 20, fontWeight: '900' },
   liveStoreIconBox: { backgroundColor: 'rgba(255,255,255,0.2)', padding: 12, borderRadius: 32 },
 
-  // Generic Card Styles
   brandingCard: { backgroundColor: '#ffffff', padding: 24, borderRadius: 32, borderWidth: 1, borderColor: '#f1f5f9', marginBottom: 24, shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
   cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#0f172a' },
 
-  // Avatar
   avatarContainer: { alignItems: 'center', marginBottom: 24 },
   avatarWrapper: { position: 'relative' },
   avatarImage: { width: 96, height: 96, borderRadius: 48, borderWidth: 4, borderColor: '#f8fafc' },
   avatarPlaceholder: { width: 96, height: 96, backgroundColor: '#f1f5f9', borderRadius: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: '#ffffff' },
   avatarEditBadge: { position: 'absolute', bottom: 0, right: 0, backgroundColor: '#0f172a', padding: 8, borderRadius: 16, borderWidth: 2, borderColor: '#ffffff' },
 
-  // Form Inputs
   inputLabel: { color: '#64748b', fontWeight: 'bold', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, marginLeft: 4 },
-  
-  // Cleaned up input text rules to match the working version
   textInput: { backgroundColor: '#f8fafc', borderWidth: 2, borderColor: '#f1f5f9', borderRadius: 16, padding: 16, fontWeight: 'bold', color: '#0f172a', fontSize: 16, marginBottom: 24, ...(Platform.OS === 'web' && { outlineStyle: 'none' }) },
   
   saveBtn: { backgroundColor: '#0f172a', height: 56, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', shadowColor: '#0f172a', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
   saveBtnText: { color: '#ffffff', fontWeight: '900', fontSize: 16 },
 
-  // Security Card
   securityCard: { backgroundColor: '#ffffff', padding: 24, borderRadius: 32, borderWidth: 1, marginBottom: 32, shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
   securityCardWarning: { borderColor: '#fecaca', backgroundColor: '#fff5f5' },
   securityCardSafe: { borderColor: '#f1f5f9' },
   securityHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
   
-  // Badges
   warningBadge: { backgroundColor: '#fee2e2', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, flexDirection: 'row', alignItems: 'center' },
   pulsingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444', marginRight: 6 },
   warningBadgeText: { color: '#ef4444', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 },
@@ -417,32 +409,31 @@ const styles = StyleSheet.create({
   actionNeededBtn: { width: '100%', borderWidth: 2, borderColor: '#fecaca', backgroundColor: '#fef2f2', paddingVertical: 16, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   actionNeededBtnText: { color: '#ef4444', fontWeight: 'bold', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
 
-  // Logout
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16, marginBottom: 40 },
   logoutBtnText: { color: '#ef4444', fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1, marginLeft: 8 },
 
-  // Settings Modal
-  modalContainer: { flex: 1, backgroundColor: '#f8fafc' },
-  modalHeader: { paddingHorizontal: 24, paddingVertical: 16, flexDirection: 'row', justifyContent: 'flex-end', backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  closeBtn: { backgroundColor: '#f1f5f9', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  closeBtnText: { fontWeight: 'bold', color: '#64748b' },
-  modalScroll: { padding: 24, paddingBottom: 60 },
-  modalTitle: { fontSize: 28, fontWeight: '900', color: '#0f172a', marginBottom: 8 },
-  modalSubtitle: { color: '#64748b', fontWeight: '500', marginBottom: 32, lineHeight: 20 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: '#ffffff', borderTopLeftRadius: 32, borderTopRightRadius: 32, height: '90%' }, // Made taller to fit everything without scrolling
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 24, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  modalTitle: { fontSize: 18, fontWeight: '900', color: '#0f172a' },
+  closeBtn: { backgroundColor: '#f1f5f9', padding: 8, borderRadius: 20 },
+  
+  // Replaced modalScroll with modalBody
+  modalBody: { flex: 1, padding: 24, justifyContent: 'center' },
+  
+  modalSubtitle: { color: '#64748b', fontWeight: '500', marginBottom: 24, lineHeight: 20, textAlign: 'center' },
   
   questionList: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 24, marginBottom: 24, overflow: 'hidden' },
-  questionItem: { padding: 16, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#ffffff' },
+  questionItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#ffffff' }, // Reduced padding slightly to fit
   questionItemActive: { backgroundColor: '#ecfdf5' },
-  questionText: { flex: 1, fontWeight: 'bold', color: '#64748b', fontSize: 14, marginRight: 8 },
+  questionText: { flex: 1, fontWeight: 'bold', color: '#64748b', fontSize: 12, marginRight: 8 }, // Reduced font size slightly
   questionTextActive: { color: '#047857' },
 
-  // Cleaned up modal input text rules
-  modalInput: { backgroundColor: '#ffffff', borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 16, padding: 16, fontWeight: 'bold', color: '#0f172a', fontSize: 18, marginBottom: 32, ...(Platform.OS === 'web' && { outlineStyle: 'none' }) },
+  modalInput: { backgroundColor: '#ffffff', borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 16, padding: 16, fontWeight: 'bold', color: '#0f172a', fontSize: 18, marginBottom: 24, ...(Platform.OS === 'web' && { outlineStyle: 'none' }) },
   
   modalSaveBtn: { backgroundColor: '#059669', height: 64, borderRadius: 16, alignItems: 'center', justifyContent: 'center', shadowColor: '#a7f3d0', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 10 },
   modalSaveBtnText: { color: '#ffffff', fontWeight: '900', fontSize: 16, textTransform: 'uppercase', letterSpacing: 1 },
 
-  // Logout Confirmation Modal
   logoutOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.6)', justifyContent: 'center', alignItems: 'center', padding: 24 },
   logoutModalContent: { backgroundColor: '#ffffff', borderRadius: 32, padding: 32, width: '100%', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 },
   logoutIconBox: { width: 64, height: 64, backgroundColor: '#fef2f2', borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },

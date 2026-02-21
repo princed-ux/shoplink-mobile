@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  View, Text, TextInput, TouchableOpacity, ActivityIndicator, 
-  Platform, KeyboardAvoidingView, StyleSheet, Keyboard 
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Platform, KeyboardAvoidingView, StyleSheet, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Phone, ShieldCheck, Check, Key, Eye, EyeOff } from 'lucide-react-native';
 import axios from 'axios';
@@ -35,7 +32,7 @@ export default function ForgotPasswordScreen({ navigation }) {
           const res = await axios.get(`${API_URL}/api/forgot-password/question/${phone}`);
           setFetchedQuestion(res.data.question);
           setStep(2); 
-          Keyboard.dismiss(); // Dismiss keyboard smoothly between steps
+          Keyboard.dismiss(); 
           Toast.show({ type: 'success', text1: 'Account Found!', text2: 'Please answer the security question.' });
       } catch (err) {
           Toast.show({ type: 'error', text1: 'Account Not Found', text2: 'Check the number and try again.' });
@@ -50,7 +47,7 @@ export default function ForgotPasswordScreen({ navigation }) {
       try {
           await axios.post(`${API_URL}/api/verify-answer`, { phone, answer });
           Toast.show({ type: 'success', text1: 'Correct Answer!', text2: 'Proceeding to reset password...' });
-          Keyboard.dismiss(); // Dismiss keyboard smoothly between steps
+          Keyboard.dismiss(); 
           setTimeout(() => setStep(3), 1000);
       } catch (err) {
           Toast.show({ type: 'error', text1: 'Wrong Answer', text2: 'That is not the correct answer.' });
@@ -79,22 +76,18 @@ export default function ForgotPasswordScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <FallingBackground />
-      
-      {/* CANCEL BUTTON STAYS FIXED AT THE TOP */}
       <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeBtn}>
               <Text style={styles.closeBtnText}>Cancel</Text>
           </TouchableOpacity>
       </View>
 
-      {/* EXACT SAME STRUCTURE AS LOGIN SCREEN (No ScrollView) */}
       <KeyboardAvoidingView 
         style={{ flex: 1 }} 
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={styles.centerContainer}>
             
-            {/* STEP 1: FIND ACCOUNT */}
             {step === 1 && (
                 <View style={styles.stepBox}>
                     <View style={styles.iconCircle}><ShieldCheck size={32} color="#64748b" /></View>
@@ -112,7 +105,6 @@ export default function ForgotPasswordScreen({ navigation }) {
                             keyboardType="phone-pad" 
                             style={styles.input}
                             placeholderTextColor="#cbd5e1"
-                            
                             autoComplete="tel"
                             textContentType="telephoneNumber"
                             importantForAutofill="yes"
@@ -125,7 +117,6 @@ export default function ForgotPasswordScreen({ navigation }) {
                 </View>
             )}
 
-            {/* STEP 2: SECURITY QUESTION */}
             {step === 2 && (
                 <View style={styles.stepBox}>
                     <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn}>
@@ -147,7 +138,6 @@ export default function ForgotPasswordScreen({ navigation }) {
                             onBlur={() => setActiveInput(null)}
                             style={styles.input}
                             placeholderTextColor="#cbd5e1"
-                            
                             autoComplete="off"
                             importantForAutofill="no"
                             textContentType="none"
@@ -161,7 +151,6 @@ export default function ForgotPasswordScreen({ navigation }) {
                 </View>
             )}
 
-            {/* STEP 3: RESET PASSWORD */}
             {step === 3 && (
                 <View style={styles.stepBox}>
                     <View style={styles.iconCircleGreen}><Check size={32} color="#059669" /></View>
@@ -179,7 +168,6 @@ export default function ForgotPasswordScreen({ navigation }) {
                             secureTextEntry={!showNewPass}
                             style={styles.input}
                             placeholderTextColor="#cbd5e1"
-                            
                             autoComplete="password"
                             textContentType="password"
                             importantForAutofill="yes"
@@ -202,7 +190,6 @@ export default function ForgotPasswordScreen({ navigation }) {
                             secureTextEntry={!showConfPass}
                             style={styles.input}
                             placeholderTextColor="#cbd5e1"
-                            
                             autoComplete="password"
                             textContentType="password"
                             importantForAutofill="yes"
@@ -228,7 +215,6 @@ export default function ForgotPasswordScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff' },
   
-  // THE LOGIN FIX: Replaced ScrollView with a perfectly centered View
   centerContainer: { flex: 1, justifyContent: "center", paddingHorizontal: 24, paddingBottom: 40 },
   
   headerRow: { paddingHorizontal: 24, paddingVertical: 16, alignItems: 'flex-end', zIndex: 10 },
