@@ -8,6 +8,9 @@ import FallingBackground from '../components/FallingBackground';
 
 const API_URL = 'https://api.shoplinkvi.com'; 
 
+// THE FIX: Isolate the KeyboardAvoidingView to iOS only.
+const KeyboardWrapper = Platform.OS === 'ios' ? KeyboardAvoidingView : View;
+
 export default function ForgotPasswordScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1); 
@@ -71,7 +74,6 @@ export default function ForgotPasswordScreen({ navigation }) {
   };
 
   return (
-    // Fixed SafeAreaView: No edges prop so the bottom navigation bar is protected
     <SafeAreaView style={styles.container}>
       <FallingBackground />
       <View style={styles.headerRow}>
@@ -80,13 +82,13 @@ export default function ForgotPasswordScreen({ navigation }) {
           </TouchableOpacity>
       </View>
 
-      {/* KeyboardAvoidingView Wrapper added based on the successful pattern */}
-      <KeyboardAvoidingView 
+      {/* THE FIX: Wrap with our platform-specific KeyboardWrapper */}
+      <KeyboardWrapper 
         style={{ flex: 1 }} 
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView 
-          contentContainerStyle={styles.centerContainer} 
+          contentContainerStyle={styles.scrollContent} 
           showsVerticalScrollIndicator={false} 
           keyboardShouldPersistTaps="handled"
         >
@@ -109,7 +111,6 @@ export default function ForgotPasswordScreen({ navigation }) {
                             style={styles.input}
                             placeholderTextColor="#cbd5e1"
                             
-                            // --- AUTOFILL ARMOR (Embracing it) ---
                             autoComplete="tel"
                             textContentType="telephoneNumber"
                             importantForAutofill="yes"
@@ -144,7 +145,6 @@ export default function ForgotPasswordScreen({ navigation }) {
                             style={styles.input}
                             placeholderTextColor="#cbd5e1"
                             
-                            // --- AUTOFILL ARMOR (Turning off for custom answer) ---
                             autoComplete="off"
                             importantForAutofill="no"
                             textContentType="none"
@@ -176,7 +176,6 @@ export default function ForgotPasswordScreen({ navigation }) {
                             style={styles.input}
                             placeholderTextColor="#cbd5e1"
                             
-                            // --- AUTOFILL ARMOR (Embracing it) ---
                             autoComplete="password"
                             textContentType="password"
                             importantForAutofill="yes"
@@ -200,7 +199,6 @@ export default function ForgotPasswordScreen({ navigation }) {
                             style={styles.input}
                             placeholderTextColor="#cbd5e1"
                             
-                            // --- AUTOFILL ARMOR (Embracing it) ---
                             autoComplete="password"
                             textContentType="password"
                             importantForAutofill="yes"
@@ -218,7 +216,7 @@ export default function ForgotPasswordScreen({ navigation }) {
             )}
 
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardWrapper>
     </SafeAreaView>
   );
 }
@@ -226,8 +224,8 @@ export default function ForgotPasswordScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff' },
   
-  // Changed scrollContent to centerContainer to center layout when the keyboard avoids it
-  centerContainer: { flexGrow: 1, justifyContent: "center", paddingHorizontal: 24, paddingVertical: 40 },
+  // THE FIX: Swapped back to scrollContent without justifyContent: 'center' so it doesn't fight the keyboard
+  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 40, paddingBottom: 60 },
   
   headerRow: { paddingHorizontal: 24, paddingVertical: 16, alignItems: 'flex-end', zIndex: 10 },
   closeBtn: { backgroundColor: '#f1f5f9', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
@@ -245,7 +243,6 @@ const styles = StyleSheet.create({
   inputInactive: { backgroundColor: '#f8fafc', borderColor: '#f1f5f9' },
   icon: { marginRight: 12 },
   
-  // Cleaned up input text rules to match the working login version
   input: { flex: 1, fontWeight: 'bold', color: '#0f172a', fontSize: 18, ...(Platform.OS === 'web' && { outlineStyle: 'none' }) },
   
   actionBtn: { backgroundColor: '#0f172a', height: 64, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 16 },

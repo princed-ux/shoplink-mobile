@@ -24,6 +24,9 @@ const SECURITY_QUESTIONS = [
   "What is the name of your first pet?"
 ];
 
+// THE FIX: Only use KeyboardAvoidingView on iPhones. Let Android handle ScrollView natively.
+const KeyboardWrapper = Platform.OS === 'ios' ? KeyboardAvoidingView : View;
+
 export default function SignupScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
@@ -34,7 +37,7 @@ export default function SignupScreen({ navigation }) {
   // Form State
   const [shopName, setShopName] = useState('');
   const [slug, setSlug] = useState('');
-  const [slugStatus, setSlugStatus] = useState('idle'); // idle, checking, available, taken
+  const [slugStatus, setSlugStatus] = useState('idle');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [securityQuestion, setSecurityQuestion] = useState(SECURITY_QUESTIONS[0]);
@@ -44,7 +47,6 @@ export default function SignupScreen({ navigation }) {
       return [styles.inputContainer, activeInput === fieldName ? styles.inputActive : styles.inputInactive];
   };
 
-  // --- AUTO SLUG GENERATOR ---
   useEffect(() => {
     if (shopName) {
       const generated = shopName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -55,7 +57,6 @@ export default function SignupScreen({ navigation }) {
     }
   }, [shopName]);
 
-  // --- SLUG AVAILABILITY CHECKER ---
   useEffect(() => {
     if (!slug) {
         setSlugStatus('idle');
@@ -69,11 +70,10 @@ export default function SignupScreen({ navigation }) {
         } catch (err) {
             setSlugStatus('taken');
         }
-    }, 500); // 500ms debounce
+    }, 500); 
     return () => clearTimeout(delay);
   }, [slug]);
 
-  // --- HANDLERS ---
   const handleNextStep = async () => {
     if (!shopName || !slug || !phone || !password) return Toast.show({ type: 'error', text1: 'Please fill all fields' });
     if (slugStatus === 'taken') return Toast.show({ type: 'error', text1: 'Store Link Taken', text2: 'Please modify your shop name slightly.' });
@@ -82,10 +82,7 @@ export default function SignupScreen({ navigation }) {
 
     setLoading(true);
     try {
-        // --- PHONE NUMBER CHECK ---
         await axios.get(`${API_URL}/api/check-phone/${phone}`);
-        
-        // If successful, proceed to step 2
         setStep(2);
     } catch (err) {
         if (err.response && err.response.status === 409) {
@@ -102,8 +99,6 @@ export default function SignupScreen({ navigation }) {
     if (!isSkipping && !securityAnswer.trim()) return Toast.show({ type: 'error', text1: 'Security answer required' });
     
     setLoading(true);
-    
-    // If skipping, send empty security fields to backend
     const payload = { 
         shopName, 
         slug, 
@@ -115,7 +110,6 @@ export default function SignupScreen({ navigation }) {
 
     try {
       const res = await axios.post(`${API_URL}/api/register`, payload);
-      
       if (Platform.OS === 'web') localStorage.setItem('quickshop_user', JSON.stringify(res.data));
       else await SecureStore.setItemAsync('quickshop_user', JSON.stringify(res.data));
       
@@ -130,21 +124,15 @@ export default function SignupScreen({ navigation }) {
   };
 
   return (
-    // Fixed SafeAreaView: No edges prop so bottom is protected
     <SafeAreaView style={styles.container}>
       <FallingBackground />
       
-      {/* KeyboardAvoidingView Wrapper added based on the successful Login pattern */}
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }} 
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <KeyboardWrapper style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView 
-          contentContainerStyle={styles.centerContainer} 
+          contentContainerStyle={styles.scrollContent} 
           showsVerticalScrollIndicator={false} 
           keyboardShouldPersistTaps="handled"
         >
-          
           <View style={styles.headerBox}>
             <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
             <Text style={styles.title}>ShopLink.vi</Text>
@@ -152,8 +140,6 @@ export default function SignupScreen({ navigation }) {
           </View>
 
           <View style={styles.formBox}>
-              
-              {/* STEP 1: BASIC INFO */}
               {step === 1 && (
                   <View style={styles.stepContainer}>
                       <View style={styles.inputGroup}>
@@ -168,8 +154,6 @@ export default function SignupScreen({ navigation }) {
                                   onBlur={() => setActiveInput(null)}
                                   style={styles.input}
                                   placeholderTextColor="#cbd5e1"
-                                  
-                                  // --- AUTOFILL ARMOR (Embracing it) ---
                                   autoComplete="name"
                                   textContentType="name"
                                   importantForAutofill="yes"
@@ -192,8 +176,6 @@ export default function SignupScreen({ navigation }) {
                                   autoCapitalize="none"
                                   style={styles.input}
                                   placeholderTextColor="#cbd5e1"
-                                  
-                                  // --- AUTOFILL ARMOR (Turning off for custom slug) ---
                                   autoComplete="off"
                                   importantForAutofill="no"
                                   textContentType="none"
@@ -219,8 +201,6 @@ export default function SignupScreen({ navigation }) {
                                   keyboardType="phone-pad"
                                   style={styles.input}
                                   placeholderTextColor="#cbd5e1"
-                                  
-                                  // --- AUTOFILL ARMOR (Embracing it) ---
                                   autoComplete="tel"
                                   textContentType="telephoneNumber"
                                   importantForAutofill="yes"
@@ -242,8 +222,6 @@ export default function SignupScreen({ navigation }) {
                                   secureTextEntry={!showPassword}
                                   style={styles.input}
                                   placeholderTextColor="#cbd5e1"
-                                  
-                                  // --- AUTOFILL ARMOR (Embracing it) ---
                                   autoComplete="password"
                                   textContentType="password"
                                   importantForAutofill="yes"
@@ -261,7 +239,6 @@ export default function SignupScreen({ navigation }) {
                   </View>
               )}
 
-              {/* STEP 2: SECURITY QUESTION */}
               {step === 2 && (
                   <View style={styles.stepContainer}>
                       <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn}>
@@ -293,8 +270,6 @@ export default function SignupScreen({ navigation }) {
                                   onBlur={() => setActiveInput(null)}
                                   style={styles.input}
                                   placeholderTextColor="#cbd5e1"
-                                  
-                                  // --- AUTOFILL ARMOR ---
                                   autoComplete="off"
                                   importantForAutofill="no"
                                   textContentType="none"
@@ -307,7 +282,6 @@ export default function SignupScreen({ navigation }) {
                           {loading ? <ActivityIndicator color="white" /> : <Text style={styles.submitText}>Complete Registration</Text>}
                       </TouchableOpacity>
 
-                      {/* --- SKIP BUTTON --- */}
                       <TouchableOpacity onPress={() => handleRegister(true)} disabled={loading} style={styles.skipBtn}>
                           <Text style={styles.skipBtnText}>Skip for now</Text>
                       </TouchableOpacity>
@@ -325,9 +299,8 @@ export default function SignupScreen({ navigation }) {
           )}
 
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardWrapper>
 
-      {/* --- QUESTION PICKER MODAL --- */}
       <Modal visible={showQuestionModal} animationType="slide" transparent={true}>
           <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
@@ -351,7 +324,6 @@ export default function SignupScreen({ navigation }) {
               </View>
           </View>
       </Modal>
-
     </SafeAreaView>
   );
 }
@@ -359,8 +331,8 @@ export default function SignupScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff' },
   
-  // Changed scrollContent to centerContainer to center layout when the keyboard avoids it
-  centerContainer: { flexGrow: 1, justifyContent: "center", paddingHorizontal: 24, paddingVertical: 40 },
+  // THE FIX: Replaced centerContainer with standard padding so it doesn't fight the keyboard
+  scrollContent: { paddingHorizontal: 24, paddingTop: 40, paddingBottom: 60 },
   
   headerBox: { alignItems: 'center', marginBottom: 32 },
   logo: { width: 80, height: 80 },
@@ -375,12 +347,9 @@ const styles = StyleSheet.create({
   inputContainer: { borderWidth: 2, borderRadius: 16, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, height: 64 },
   inputActive: { backgroundColor: '#ffffff', borderColor: '#10b981', shadowColor: '#d1fae5', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, shadowRadius: 4, elevation: 2 },
   inputInactive: { backgroundColor: '#f8fafc', borderColor: '#f1f5f9' },
-  
   icon: { marginRight: 12 },
   
-  // Cleaned up input text rules to match the working login version
   input: { flex: 1, fontWeight: 'bold', color: '#0f172a', fontSize: 16, ...(Platform.OS === 'web' && { outlineStyle: 'none' }) },
-  
   prefixText: { color: '#94a3b8', fontWeight: 'bold', fontSize: 16, marginRight: 2 },
   errorText: { color: '#ef4444', fontSize: 10, fontWeight: 'bold', marginTop: 4, marginLeft: 4 },
   
@@ -394,7 +363,6 @@ const styles = StyleSheet.create({
   footerText: { color: '#64748b', fontWeight: '500' },
   footerTextBold: { color: '#047857', fontWeight: '900' },
 
-  // Step 2 Specifics
   backBtn: { alignSelf: 'flex-start', marginBottom: 8, backgroundColor: '#f1f5f9', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   backBtnText: { color: '#64748b', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 },
   securityHeader: { alignItems: 'center', marginBottom: 16 },
@@ -405,7 +373,6 @@ const styles = StyleSheet.create({
   questionSelector: { backgroundColor: '#f8fafc', borderWidth: 2, borderColor: '#f1f5f9', borderRadius: 16, height: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
   questionSelectorText: { flex: 1, color: '#0f172a', fontWeight: 'bold', fontSize: 14, marginRight: 8 },
 
-  // Modal Styles
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: '#ffffff', borderTopLeftRadius: 32, borderTopRightRadius: 32, maxHeight: '80%', paddingBottom: 40 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 24, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },

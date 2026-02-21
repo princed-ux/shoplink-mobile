@@ -11,12 +11,13 @@ import axios from 'axios';
 import Toast from 'react-native-toast-message';
 import { useFocusEffect } from '@react-navigation/native';
 
-// !!! MATCH THIS WITH YOUR BACKEND !!!
 const API_URL = 'https://api.shoplinkvi.com'; 
 
 const { width, height } = Dimensions.get('window');
 
-// --- 1. AURORA BACKGROUND ---
+// THE FIX: Isolate the KeyboardAvoidingView to iOS only. Android Modals handle it natively!
+const KeyboardWrapper = Platform.OS === 'ios' ? KeyboardAvoidingView : View;
+
 const AuroraBackground = () => {
   const blob1 = useRef(new Animated.Value(0)).current;
   const blob2 = useRef(new Animated.Value(0)).current;
@@ -57,8 +58,6 @@ export default function ProductManager() {
   const [modalVisible, setModalVisible] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [user, setUser] = useState(null);
-  
-  // Focus State for Custom Borders
   const [activeInput, setActiveInput] = useState(null); 
 
   const [isEditing, setIsEditing] = useState(false);
@@ -69,7 +68,6 @@ export default function ProductManager() {
   const [description, setDescription] = useState('');
   const [image, setImage] = useState(null);
 
-  // --- HELPER FOR BORDER COLOR ---
   const getContainerStyle = (fieldName, isTextArea = false) => {
       const isActive = activeInput === fieldName;
       return [
@@ -190,7 +188,6 @@ export default function ProductManager() {
   return (
     <View style={styles.mainContainer}>
       <AuroraBackground />
-      {/* SafeAreaView fixed: No edges prop so bottom is protected */}
       <SafeAreaView style={styles.flex1}>
           <View style={styles.headerContainer}>
             <View>
@@ -231,7 +228,6 @@ export default function ProductManager() {
           </TouchableOpacity>
       </SafeAreaView>
 
-      {/* --- ADD/EDIT PRODUCT MODAL --- */}
       <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
@@ -239,8 +235,8 @@ export default function ProductManager() {
              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalCloseBtn}><X size={20} color="#64748b" /></TouchableOpacity>
           </View>
 
-          {/* KeyboardAvoidingView wrapping the Modal ScrollView */}
-          <KeyboardAvoidingView 
+          {/* THE FIX: Replaced KeyboardAvoidingView with KeyboardWrapper so Android doesn't glitch */}
+          <KeyboardWrapper 
             style={{ flex: 1 }} 
             behavior={Platform.OS === "ios" ? "padding" : undefined}
           >
@@ -256,8 +252,6 @@ export default function ProductManager() {
                </TouchableOpacity>
 
                <View style={styles.formGroup}>
-                   
-                   {/* NAME INPUT */}
                    <View style={styles.inputGroup}>
                       <Text style={styles.inputLabel}>Product Name</Text>
                       <View style={getContainerStyle('name')}>
@@ -270,8 +264,6 @@ export default function ProductManager() {
                             onBlur={() => setActiveInput(null)}
                             style={styles.input}
                             placeholderTextColor="#cbd5e1"
-                            
-                            // --- AUTOFILL ARMOR ---
                             autoComplete="off"
                             importantForAutofill="no"
                             textContentType="none"
@@ -280,7 +272,6 @@ export default function ProductManager() {
                       </View>
                    </View>
 
-                   {/* PRICE INPUT */}
                    <View style={styles.inputGroup}>
                       <Text style={styles.inputLabel}>Price (₦)</Text>
                       <View style={getContainerStyle('price')}>
@@ -294,8 +285,6 @@ export default function ProductManager() {
                             keyboardType="numeric"
                             style={styles.input}
                             placeholderTextColor="#cbd5e1"
-
-                            // --- AUTOFILL ARMOR ---
                             autoComplete="off"
                             importantForAutofill="no"
                             textContentType="none"
@@ -304,7 +293,6 @@ export default function ProductManager() {
                       </View>
                    </View>
 
-                   {/* DESCRIPTION INPUT */}
                    <View style={styles.inputGroup}>
                       <Text style={styles.inputLabel}>Details</Text>
                       <View style={getContainerStyle('desc', true)}>
@@ -319,8 +307,6 @@ export default function ProductManager() {
                             textAlignVertical="top"
                             style={styles.textAreaInput}
                             placeholderTextColor="#cbd5e1"
-
-                            // --- AUTOFILL ARMOR ---
                             autoComplete="off"
                             importantForAutofill="no"
                             textContentType="none"
@@ -335,43 +321,29 @@ export default function ProductManager() {
                </TouchableOpacity>
 
             </ScrollView>
-          </KeyboardAvoidingView>
+          </KeyboardWrapper>
         </View>
       </Modal>
     </View>
   );
 }
 
-// ==========================================
-// STANDARD STYLES
-// ==========================================
 const styles = StyleSheet.create({
-    // Globals
     flex1: { flex: 1 },
     mainContainer: { flex: 1, backgroundColor: '#f8fafc', position: 'relative' },
-    
-    // Aurora Background
     auroraContainer: { position: 'absolute', width: width, height: height, zIndex: -1, backgroundColor: '#f8fafc' },
     blob1: { position: 'absolute', top: 100, left: -50, width: 300, height: 300, backgroundColor: '#e9d5ff', borderRadius: 150, opacity: 0.5 },
     blob2: { position: 'absolute', bottom: 100, right: -50, width: 280, height: 280, backgroundColor: '#a7f3d0', borderRadius: 140, opacity: 0.5 },
-
-    // Header
     headerContainer: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
     headerSubText: { color: '#64748b', fontWeight: 'bold', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
     headerTitle: { fontSize: 30, fontWeight: '900', color: '#0f172a', letterSpacing: -0.5 },
     headerBadge: { backgroundColor: '#ffffff', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: '#f1f5f9', shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2, marginBottom: 4 },
     headerBadgeText: { color: '#0f172a', fontWeight: 'bold', fontSize: 12 },
-
-    // FlatList
     listContent: { padding: 24, paddingBottom: 180 }, 
-    
-    // Empty State
     emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 80, opacity: 0.8 },
     emptyIconBox: { backgroundColor: '#ffffff', width: 128, height: 128, borderRadius: 64, alignItems: 'center', justifyContent: 'center', marginBottom: 24, shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2, borderWidth: 1, borderColor: '#f1f5f9' },
     emptyTitle: { color: '#0f172a', fontWeight: '900', fontSize: 20, marginBottom: 8 },
     emptyDesc: { color: '#94a3b8', fontSize: 14, textAlign: 'center', paddingHorizontal: 40, lineHeight: 24, fontWeight: '500' },
-
-    // Product Card
     productCard: { backgroundColor: '#ffffff', padding: 16, borderRadius: 24, marginBottom: 16, flexDirection: 'row', alignItems: 'center', shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2, borderWidth: 1, borderColor: '#f1f5f9', overflow: 'hidden' },
     productImage: { width: 96, height: 96, borderRadius: 16, backgroundColor: '#f8fafc', marginRight: 16 },
     productInfo: { flex: 1, paddingVertical: 4 },
@@ -382,47 +354,34 @@ const styles = StyleSheet.create({
     productActions: { flexDirection: 'column', gap: 12, marginLeft: 8 },
     actionBtnEdit: { backgroundColor: '#f8fafc', padding: 10, borderRadius: 12, borderWidth: 1, borderColor: '#f1f5f9' },
     actionBtnDelete: { backgroundColor: '#fef2f2', padding: 10, borderRadius: 12, borderWidth: 1, borderColor: '#fee2e2' },
-
-    // Floating Action Button
     fab: { position: 'absolute', bottom: 120, right: 24, backgroundColor: '#0f172a', width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 15, elevation: 10, zIndex: 50 }, 
-
-    // Modal Global
     modalContainer: { flex: 1, backgroundColor: '#ffffff' },
     modalHeader: { paddingHorizontal: 24, paddingVertical: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
     modalTitle: { fontSize: 20, fontWeight: '900', color: '#0f172a' },
     modalCloseBtn: { backgroundColor: '#f8fafc', padding: 8, borderRadius: 20 },
-    modalScroll: { padding: 24 },
-
-    // Image Picker
+    
+    // THE FIX: Added 100px paddingBottom so you can scroll up when the keyboard is open!
+    modalScroll: { padding: 24, paddingBottom: 100 },
+    
     imagePickerBox: { height: 256, backgroundColor: '#f8fafc', borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 32, borderWidth: 2, borderStyle: 'dashed', borderColor: '#e2e8f0', overflow: 'hidden' },
     imageFull: { width: '100%', height: '100%' },
     imageIconBox: { backgroundColor: '#ffffff', width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 12, shadowColor: '#94a3b8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2, borderWidth: 1, borderColor: '#f1f5f9' },
     imagePickerTitle: { color: '#0f172a', fontWeight: '900', fontSize: 18 },
     imagePickerSub: { color: '#94a3b8', fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1, marginTop: 4 },
-
-    // Form Inputs
     formGroup: { marginBottom: 40, gap: 20 },
     inputGroup: { flex: 1 },
     inputLabel: { fontSize: 12, fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, marginLeft: 4 },
-    
-    // Dynamic Input Containers
     inputContainer: { borderWidth: 2, borderRadius: 16, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, height: 64 },
     textAreaContainer: { height: 128, alignItems: 'flex-start', paddingTop: 16, paddingBottom: 16 },
     inputContainerActive: { backgroundColor: '#ffffff', borderColor: '#10b981', shadowColor: '#10b981', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
     inputContainerInactive: { backgroundColor: '#f8fafc', borderColor: '#f1f5f9' },
-    
     inputIcon: { marginRight: 12 },
     textAreaIcon: { marginRight: 12, marginTop: 4 },
-    
-    // Cleaned up input text rules to match the working login version
     input: { flex: 1, fontWeight: 'bold', color: '#0f172a', fontSize: 18, ...(Platform.OS === 'web' && { outlineStyle: 'none' }) },
     textAreaInput: { flex: 1, fontWeight: 'bold', color: '#0f172a', fontSize: 16, lineHeight: 24, minHeight: 96, ...(Platform.OS === 'web' && { outlineStyle: 'none' }) },
-    
     priceSymbol: { fontSize: 18, fontWeight: 'bold', marginRight: 12 },
     priceSymbolActive: { color: '#10b981' },
     priceSymbolInactive: { color: '#94a3b8' },
-
-    // Submit Button
     submitBtn: { backgroundColor: '#059669', height: 64, borderRadius: 16, alignItems: 'center', justifyContent: 'center', shadowColor: '#a7f3d0', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 10, marginBottom: 40 },
     submitBtnText: { color: '#ffffff', fontWeight: '900', fontSize: 18, letterSpacing: 1, textTransform: 'uppercase' }
 });
