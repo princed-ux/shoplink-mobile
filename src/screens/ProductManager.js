@@ -192,7 +192,8 @@ export default function ProductManager() {
   return (
     <View style={styles.mainContainer}>
       <AuroraBackground />
-      <SafeAreaView style={styles.flex1}>
+      {/* 1. Added edges here to stop the layout jump */}
+      <SafeAreaView style={styles.flex1} edges={['top', 'left', 'right']}>
           <View style={styles.headerContainer}>
             <View>
               <Text style={styles.headerSubText}>Management</Text>
@@ -242,7 +243,8 @@ export default function ProductManager() {
              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalCloseBtn}><X size={20} color="#64748b" /></TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.flex1} contentContainerStyle={styles.modalScroll}>
+          {/* 2. Added keyboardShouldPersistTaps */}
+          <ScrollView style={styles.flex1} contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled">
              <TouchableOpacity onPress={pickImage} style={styles.imagePickerBox}>
                 {image ? <Image source={{ uri: image }} style={styles.imageFull} resizeMode="cover" /> : (
                   <View style={{ alignItems: 'center' }}>
@@ -268,6 +270,11 @@ export default function ProductManager() {
                           onBlur={() => setActiveInput(null)}
                           style={Platform.OS === 'web' ? [styles.inputText, { outlineStyle: 'none' }] : styles.inputText}
                           placeholderTextColor="#cbd5e1"
+                          
+                          // --- THE ARMOR ---
+                          autoComplete="off"
+                          importantForAutofill="no"
+                          textContentType="none"
                         />
                     </View>
                  </View>
@@ -286,6 +293,11 @@ export default function ProductManager() {
                           keyboardType="numeric"
                           style={Platform.OS === 'web' ? [styles.inputText, { outlineStyle: 'none' }] : styles.inputText}
                           placeholderTextColor="#cbd5e1"
+
+                          // --- THE ARMOR ---
+                          autoComplete="off"
+                          importantForAutofill="no"
+                          textContentType="none"
                         />
                     </View>
                  </View>
@@ -305,6 +317,11 @@ export default function ProductManager() {
                           textAlignVertical="top"
                           style={Platform.OS === 'web' ? [styles.textAreaInput, { outlineStyle: 'none' }] : styles.textAreaInput}
                           placeholderTextColor="#cbd5e1"
+
+                          // --- THE ARMOR ---
+                          autoComplete="off"
+                          importantForAutofill="no"
+                          textContentType="none"
                         />
                     </View>
                  </View>

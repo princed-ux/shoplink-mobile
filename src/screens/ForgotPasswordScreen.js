@@ -100,6 +100,11 @@ export default function ForgotPasswordScreen({ navigation }) {
                           onBlur={() => setActiveInput(null)}
                           keyboardType="phone-pad" 
                           style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
+                          
+                          // --- AUTOFILL ARMOR ---
+                          autoComplete="off"
+                          importantForAutofill="no"
+                          textContentType="none"
                       />
                   </View>
                   <TouchableOpacity onPress={handleFetch} disabled={loading} style={styles.actionBtn}>
@@ -129,6 +134,11 @@ export default function ForgotPasswordScreen({ navigation }) {
                           onBlur={() => setActiveInput(null)}
                           style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
                           placeholderTextColor="#cbd5e1"
+                          
+                          // --- AUTOFILL ARMOR ---
+                          autoComplete="off"
+                          importantForAutofill="no"
+                          textContentType="none"
                       />
                   </View>
                   
@@ -154,6 +164,11 @@ export default function ForgotPasswordScreen({ navigation }) {
                           onBlur={() => setActiveInput(null)}
                           secureTextEntry={!showNewPass}
                           style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
+                          
+                          // --- AUTOFILL ARMOR ---
+                          autoComplete="off"
+                          importantForAutofill="no"
+                          textContentType="none"
                       />
                       <TouchableOpacity onPress={() => setShowNewPass(!showNewPass)}>
                           {showNewPass ? <EyeOff size={20} color="#94a3b8"/> : <Eye size={20} color="#94a3b8"/>}
@@ -171,6 +186,11 @@ export default function ForgotPasswordScreen({ navigation }) {
                           onBlur={() => setActiveInput(null)}
                           secureTextEntry={!showConfPass}
                           style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
+                          
+                          // --- AUTOFILL ARMOR ---
+                          autoComplete="off"
+                          importantForAutofill="no"
+                          textContentType="none"
                       />
                       <TouchableOpacity onPress={() => setShowConfPass(!showConfPass)}>
                           {showConfPass ? <EyeOff size={20} color="#94a3b8"/> : <Eye size={20} color="#94a3b8"/>}

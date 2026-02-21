@@ -70,6 +70,11 @@ export default function LoginScreen({ navigation }) {
                         keyboardType="phone-pad"
                         style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
                         placeholderTextColor="#cbd5e1"
+                        
+                        // --- AUTOFILL ARMOR ---
+                        autoComplete="off"
+                        importantForAutofill="no"
+                        textContentType="none"
                     />
                 </View>
             </View>
@@ -87,6 +92,11 @@ export default function LoginScreen({ navigation }) {
                         secureTextEntry={!showPassword}
                         style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
                         placeholderTextColor="#cbd5e1"
+                        
+                        // --- AUTOFILL ARMOR ---
+                        autoComplete="off"
+                        importantForAutofill="no"
+                        textContentType="none"
                     />
                     <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                         {showPassword ? <EyeOff size={20} color="#94a3b8"/> : <Eye size={20} color="#94a3b8"/>}
@@ -117,7 +127,7 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff', position: 'relative' },
   flex1: { flex: 1 },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingBottom: 40 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 100, paddingBottom: 40 },
   headerBox: { alignItems: 'center', marginBottom: 40, marginTop: 40 },
   logo: { width: 90, height: 90 },
   title: { fontSize: 30, fontWeight: '900', color: '#064e3b', marginTop: 16, letterSpacing: -0.5 },

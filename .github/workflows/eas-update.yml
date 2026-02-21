@@ -31,4 +31,4 @@ jobs:
 
       - name: Publish update to Expo
         # Also removed the deprecated flag here to make it perfectly clean
-        run: eas update --auto
+        run: eas update --branch preview

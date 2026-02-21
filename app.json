@@ -22,7 +22,7 @@
       "package": "com.shoplink.mobile",
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/favicon.png",
+        "foregroundImage": "./assets/adaptive-icon.png", 
         "backgroundColor": "#ffffff"
       }
     },

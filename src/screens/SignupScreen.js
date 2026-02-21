@@ -165,6 +165,11 @@ export default function SignupScreen({ navigation }) {
                                 onBlur={() => setActiveInput(null)}
                                 style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
                                 placeholderTextColor="#cbd5e1"
+                                
+                                // --- AUTOFILL ARMOR ---
+                                autoComplete="off"
+                                importantForAutofill="no"
+                                textContentType="none"
                             />
                         </View>
                     </View>
@@ -183,6 +188,11 @@ export default function SignupScreen({ navigation }) {
                                 autoCapitalize="none"
                                 style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
                                 placeholderTextColor="#cbd5e1"
+                                
+                                // --- AUTOFILL ARMOR ---
+                                autoComplete="off"
+                                importantForAutofill="no"
+                                textContentType="none"
                             />
                             {slugStatus === 'checking' && <ActivityIndicator size="small" color="#94a3b8" />}
                             {slugStatus === 'available' && <Check size={20} color="#10b981" />}
@@ -204,6 +214,11 @@ export default function SignupScreen({ navigation }) {
                                 keyboardType="phone-pad"
                                 style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
                                 placeholderTextColor="#cbd5e1"
+                                
+                                // --- AUTOFILL ARMOR ---
+                                autoComplete="off"
+                                importantForAutofill="no"
+                                textContentType="none"
                             />
                         </View>
                     </View>
@@ -221,6 +236,11 @@ export default function SignupScreen({ navigation }) {
                                 secureTextEntry={!showPassword}
                                 style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
                                 placeholderTextColor="#cbd5e1"
+                                
+                                // --- AUTOFILL ARMOR ---
+                                autoComplete="off"
+                                importantForAutofill="no"
+                                textContentType="none"
                             />
                             <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                                 {showPassword ? <EyeOff size={20} color="#94a3b8"/> : <Eye size={20} color="#94a3b8"/>}
@@ -266,6 +286,11 @@ export default function SignupScreen({ navigation }) {
                                 onBlur={() => setActiveInput(null)}
                                 style={Platform.OS === 'web' ? [styles.input, { outlineStyle: 'none' }] : styles.input}
                                 placeholderTextColor="#cbd5e1"
+                                
+                                // --- AUTOFILL ARMOR ---
+                                autoComplete="off"
+                                importantForAutofill="no"
+                                textContentType="none"
                             />
                         </View>
                     </View>
@@ -325,7 +350,7 @@ export default function SignupScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff', position: 'relative' },
   flex1: { flex: 1 },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingBottom: 40 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 100, paddingBottom: 40 },
   headerBox: { alignItems: 'center', marginBottom: 32, marginTop: 24 },
   logo: { width: 80, height: 80 },
   title: { fontSize: 28, fontWeight: '900', color: '#064e3b', marginTop: 12, letterSpacing: -0.5 },

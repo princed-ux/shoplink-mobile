@@ -215,6 +215,11 @@ export default function BrandingScreen({ navigation }) {
             style={Platform.OS === 'web' ? [styles.textInput, { outlineStyle: 'none' }] : styles.textInput}
             placeholder="Enter Shop Name"
             placeholderTextColor="#cbd5e1"
+
+            // --- THE ARMOR ---
+            autoComplete="off"
+            importantForAutofill="no"
+            textContentType="none"
           />
 
           <TouchableOpacity onPress={handleUpdateProfile} disabled={loading} style={styles.saveBtn}>
@@ -308,6 +313,11 @@ export default function BrandingScreen({ navigation }) {
                   style={Platform.OS === 'web' ? [styles.modalInput, { outlineStyle: 'none' }] : styles.modalInput}
                   placeholder="Type your secret answer..."
                   placeholderTextColor="#cbd5e1"
+
+                  // --- THE ARMOR ---
+                  autoComplete="off"
+                  importantForAutofill="no"
+                  textContentType="none"
                />
 
                <TouchableOpacity onPress={handleUpdateSecurity} disabled={secLoading} style={styles.modalSaveBtn}>
