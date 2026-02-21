@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Platform, KeyboardAvoidingView, ScrollView, StyleSheet } from 'react-native';
+import { 
+  View, Text, TextInput, TouchableOpacity, ActivityIndicator, 
+  Platform, KeyboardAvoidingView, StyleSheet, Keyboard 
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Phone, ShieldCheck, Check, Key, Eye, EyeOff } from 'lucide-react-native';
 import axios from 'axios';
@@ -7,9 +10,6 @@ import Toast from 'react-native-toast-message';
 import FallingBackground from '../components/FallingBackground'; 
 
 const API_URL = 'https://api.shoplinkvi.com'; 
-
-// THE FIX: Isolate the KeyboardAvoidingView to iOS only.
-const KeyboardWrapper = Platform.OS === 'ios' ? KeyboardAvoidingView : View;
 
 export default function ForgotPasswordScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
@@ -35,6 +35,7 @@ export default function ForgotPasswordScreen({ navigation }) {
           const res = await axios.get(`${API_URL}/api/forgot-password/question/${phone}`);
           setFetchedQuestion(res.data.question);
           setStep(2); 
+          Keyboard.dismiss(); // Dismiss keyboard smoothly between steps
           Toast.show({ type: 'success', text1: 'Account Found!', text2: 'Please answer the security question.' });
       } catch (err) {
           Toast.show({ type: 'error', text1: 'Account Not Found', text2: 'Check the number and try again.' });
@@ -49,6 +50,7 @@ export default function ForgotPasswordScreen({ navigation }) {
       try {
           await axios.post(`${API_URL}/api/verify-answer`, { phone, answer });
           Toast.show({ type: 'success', text1: 'Correct Answer!', text2: 'Proceeding to reset password...' });
+          Keyboard.dismiss(); // Dismiss keyboard smoothly between steps
           setTimeout(() => setStep(3), 1000);
       } catch (err) {
           Toast.show({ type: 'error', text1: 'Wrong Answer', text2: 'That is not the correct answer.' });
@@ -65,6 +67,7 @@ export default function ForgotPasswordScreen({ navigation }) {
       try {
           await axios.post(`${API_URL}/api/reset-password`, { phone, answer, newPassword });
           Toast.show({ type: 'success', text1: 'Password Reset Successful!', text2: 'Please login with your new password.' });
+          Keyboard.dismiss();
           setTimeout(() => navigation.navigate('Login'), 1500);
       } catch (err) {
           Toast.show({ type: 'error', text1: 'Reset Failed', text2: 'Server error. Try again.' });
@@ -76,23 +79,22 @@ export default function ForgotPasswordScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <FallingBackground />
+      
+      {/* CANCEL BUTTON STAYS FIXED AT THE TOP */}
       <View style={styles.headerRow}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeBtn}>
               <Text style={styles.closeBtnText}>Cancel</Text>
           </TouchableOpacity>
       </View>
 
-      {/* THE FIX: Wrap with our platform-specific KeyboardWrapper */}
-      <KeyboardWrapper 
+      {/* EXACT SAME STRUCTURE AS LOGIN SCREEN (No ScrollView) */}
+      <KeyboardAvoidingView 
         style={{ flex: 1 }} 
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent} 
-          showsVerticalScrollIndicator={false} 
-          keyboardShouldPersistTaps="handled"
-        >
+        <View style={styles.centerContainer}>
             
+            {/* STEP 1: FIND ACCOUNT */}
             {step === 1 && (
                 <View style={styles.stepBox}>
                     <View style={styles.iconCircle}><ShieldCheck size={32} color="#64748b" /></View>
@@ -123,6 +125,7 @@ export default function ForgotPasswordScreen({ navigation }) {
                 </View>
             )}
 
+            {/* STEP 2: SECURITY QUESTION */}
             {step === 2 && (
                 <View style={styles.stepBox}>
                     <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn}>
@@ -158,6 +161,7 @@ export default function ForgotPasswordScreen({ navigation }) {
                 </View>
             )}
 
+            {/* STEP 3: RESET PASSWORD */}
             {step === 3 && (
                 <View style={styles.stepBox}>
                     <View style={styles.iconCircleGreen}><Check size={32} color="#059669" /></View>
@@ -215,8 +219,8 @@ export default function ForgotPasswordScreen({ navigation }) {
                 </View>
             )}
 
-        </ScrollView>
-      </KeyboardWrapper>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -224,8 +228,8 @@ export default function ForgotPasswordScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff' },
   
-  // THE FIX: Swapped back to scrollContent without justifyContent: 'center' so it doesn't fight the keyboard
-  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 40, paddingBottom: 60 },
+  // THE LOGIN FIX: Replaced ScrollView with a perfectly centered View
+  centerContainer: { flex: 1, justifyContent: "center", paddingHorizontal: 24, paddingBottom: 40 },
   
   headerRow: { paddingHorizontal: 24, paddingVertical: 16, alignItems: 'flex-end', zIndex: 10 },
   closeBtn: { backgroundColor: '#f1f5f9', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },

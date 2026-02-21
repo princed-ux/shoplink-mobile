@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, ActivityIndicator, 
-  Platform, Image, KeyboardAvoidingView, ScrollView, Modal, StyleSheet
+  Platform, Image, KeyboardAvoidingView, Modal, StyleSheet, Keyboard
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
@@ -24,16 +24,14 @@ const SECURITY_QUESTIONS = [
   "What is the name of your first pet?"
 ];
 
-// NUCLEAR FIX 1: iOS gets the avoider. Android gets a completely dumb, static View.
-const KeyboardWrapper = Platform.OS === 'ios' ? KeyboardAvoidingView : View;
-
 export default function SignupScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1); // Now goes from 1 to 3
   const [activeInput, setActiveInput] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showQuestionModal, setShowQuestionModal] = useState(false);
 
+  // Form State
   const [shopName, setShopName] = useState('');
   const [slug, setSlug] = useState('');
   const [slugStatus, setSlugStatus] = useState('idle');
@@ -47,6 +45,7 @@ export default function SignupScreen({ navigation }) {
     activeInput === fieldName ? styles.inputActive : styles.inputInactive
   ];
 
+  // --- AUTO SLUG GENERATOR ---
   useEffect(() => {
     if (shopName) {
       const generated = shopName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -57,6 +56,7 @@ export default function SignupScreen({ navigation }) {
     }
   }, [shopName]);
 
+  // --- SLUG AVAILABILITY CHECKER ---
   useEffect(() => {
     if (!slug) {
         setSlugStatus('idle');
@@ -74,16 +74,25 @@ export default function SignupScreen({ navigation }) {
     return () => clearTimeout(delay);
   }, [slug]);
 
-  const handleNextStep = async () => {
-    if (!shopName || !slug || !phone || !password) return Toast.show({ type: 'error', text1: 'Please fill all fields' });
+  // --- WIZARD HANDLERS ---
+  const handleStep1 = () => {
+    if (!shopName || !slug) return Toast.show({ type: 'error', text1: 'Please fill both fields' });
     if (slugStatus === 'taken') return Toast.show({ type: 'error', text1: 'Store Link Taken', text2: 'Please modify your shop name slightly.' });
     if (slugStatus === 'checking') return Toast.show({ type: 'info', text1: 'Checking Link Availability...' });
+    
+    setStep(2);
+    Keyboard.dismiss();
+  };
+
+  const handleStep2 = async () => {
+    if (!phone || !password) return Toast.show({ type: 'error', text1: 'Please fill both fields' });
     if (password.length < 6) return Toast.show({ type: 'error', text1: 'Password too short (min 6 chars)' });
 
     setLoading(true);
     try {
         await axios.get(`${API_URL}/api/check-phone/${phone}`);
-        setStep(2);
+        setStep(3);
+        Keyboard.dismiss();
     } catch (err) {
         if (err.response && err.response.status === 409) {
             Toast.show({ type: 'error', text1: 'Phone Number Taken', text2: 'This number is already registered. Please Sign In.' });
@@ -99,7 +108,6 @@ export default function SignupScreen({ navigation }) {
     if (!isSkipping && !securityAnswer.trim()) return Toast.show({ type: 'error', text1: 'Security answer required' });
     
     setLoading(true);
-    
     const payload = { 
         shopName, 
         slug, 
@@ -126,31 +134,29 @@ export default function SignupScreen({ navigation }) {
   };
 
   return (
-    // NUCLEAR FIX 2: Locked to 'top' ONLY. Do not let SafeArea recalculate the bottom during keyboard pops!
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container}>
       <FallingBackground />
       
-      <KeyboardWrapper 
+      {/* EXACT SAME STRUCTURE AS YOUR PERFECT LOGIN SCREEN */}
+      <KeyboardAvoidingView 
         style={{ flex: 1 }} 
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        {/* NUCLEAR FIX 3: Removed TouchableWithoutFeedback. ScrollView handles taps naturally. */}
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent} 
-          showsVerticalScrollIndicator={false} 
-          keyboardShouldPersistTaps="handled"
-          bounces={false}
-        >
+        <View style={styles.centerContainer}>
+          
           <View style={styles.headerBox}>
             <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
             <Text style={styles.title}>ShopLink.vi</Text>
-            <Text style={styles.subtitle}>Start Your Business  --another test</Text>
+            <Text style={styles.subtitle}>
+              {step === 1 ? 'Step 1: Store Branding' : step === 2 ? 'Step 2: Account Details' : 'Step 3: Security'}
+            </Text>
           </View>
 
           <View style={styles.formBox}>
               
+              {/* === STEP 1: BRANDING === */}
               {step === 1 && (
-                  <View style={styles.stepContainer}>
+                  <>
                       <View style={styles.inputGroup}>
                           <Text style={styles.label}>Shop Name</Text>
                           <View style={getContainerStyle('shopName')}>
@@ -188,7 +194,7 @@ export default function SignupScreen({ navigation }) {
                                   autoComplete="off"
                                   importantForAutofill="no"
                                   textContentType="none"
-                                  returnKeyType="next"
+                                  returnKeyType="done"
                               />
                               {slugStatus === 'checking' && <ActivityIndicator size="small" color="#94a3b8" />}
                               {slugStatus === 'available' && <Check size={20} color="#10b981" />}
@@ -196,6 +202,19 @@ export default function SignupScreen({ navigation }) {
                           </View>
                           {slugStatus === 'taken' && <Text style={styles.errorText}>This link is already taken.</Text>}
                       </View>
+
+                      <TouchableOpacity onPress={handleStep1} style={styles.submitBtn}>
+                          <Text style={styles.submitText}>Next Step</Text>
+                      </TouchableOpacity>
+                  </>
+              )}
+
+              {/* === STEP 2: ACCOUNT === */}
+              {step === 2 && (
+                  <>
+                      <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn}>
+                          <Text style={styles.backBtnText}>BACK</Text>
+                      </TouchableOpacity>
 
                       <View style={styles.inputGroup}>
                           <Text style={styles.label}>WhatsApp Number</Text>
@@ -242,22 +261,22 @@ export default function SignupScreen({ navigation }) {
                           </View>
                       </View>
 
-                      <TouchableOpacity onPress={handleNextStep} disabled={loading} style={styles.submitBtn}>
-                          {loading ? <ActivityIndicator color="white" /> : <Text style={styles.submitText}>Continue</Text>}
+                      <TouchableOpacity onPress={handleStep2} disabled={loading} style={styles.submitBtn}>
+                          {loading ? <ActivityIndicator color="white" /> : <Text style={styles.submitText}>Next Step</Text>}
                       </TouchableOpacity>
-                  </View>
+                  </>
               )}
 
-              {step === 2 && (
-                  <View style={styles.stepContainer}>
-                      <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn}>
+              {/* === STEP 3: SECURITY QUESTION === */}
+              {step === 3 && (
+                  <>
+                      <TouchableOpacity onPress={() => setStep(2)} style={styles.backBtn}>
                           <Text style={styles.backBtnText}>BACK</Text>
                       </TouchableOpacity>
 
                       <View style={styles.securityHeader}>
                           <View style={styles.iconCircle}><ShieldCheck size={32} color="#059669" /></View>
-                          <Text style={styles.securityTitle}>Secure Your Account</Text>
-                          <Text style={styles.securitySub}>This helps you recover your password if you ever forget it.</Text>
+                          <Text style={styles.securitySub}>Set a recovery question in case you forget your password.</Text>
                       </View>
 
                       <View style={styles.inputGroup}>
@@ -294,11 +313,12 @@ export default function SignupScreen({ navigation }) {
                       <TouchableOpacity onPress={() => handleRegister(true)} disabled={loading} style={styles.skipBtn}>
                           <Text style={styles.skipBtnText}>Skip for now</Text>
                       </TouchableOpacity>
-                  </View>
+                  </>
               )}
 
           </View>
 
+          {/* SIGN IN FOOTER ONLY SHOWS ON STEP 1 */}
           {step === 1 && (
               <View style={styles.footerRow}>
                 <TouchableOpacity onPress={() => navigation.navigate('Login')}>
@@ -307,8 +327,8 @@ export default function SignupScreen({ navigation }) {
               </View>
           )}
 
-        </ScrollView>
-      </KeyboardWrapper>
+        </View>
+      </KeyboardAvoidingView>
 
       <Modal visible={showQuestionModal} animationType="slide" transparent={true}>
           <View style={styles.modalOverlay}>
@@ -319,7 +339,7 @@ export default function SignupScreen({ navigation }) {
                           <X size={20} color="#64748b" />
                       </TouchableOpacity>
                   </View>
-                  <ScrollView style={styles.modalList}>
+                  <View style={styles.modalList}>
                       {SECURITY_QUESTIONS.map((q, i) => (
                           <TouchableOpacity 
                               key={i} 
@@ -329,7 +349,7 @@ export default function SignupScreen({ navigation }) {
                               <Text style={[styles.modalItemText, securityQuestion === q && styles.modalItemTextActive]}>{q}</Text>
                           </TouchableOpacity>
                       ))}
-                  </ScrollView>
+                  </View>
               </View>
           </View>
       </Modal>
@@ -340,16 +360,16 @@ export default function SignupScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff' },
   
-  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 40, paddingBottom: 60 },
+  // EXACT SAME CONTAINER AS LOGIN
+  centerContainer: { flex: 1, justifyContent: "center", paddingHorizontal: 24 },
   
-  headerBox: { alignItems: 'center', marginBottom: 32 },
+  headerBox: { alignItems: 'center', marginBottom: 24 }, // Slightly reduced bottom margin to keep things centered
   logo: { width: 80, height: 80 },
   title: { fontSize: 28, fontWeight: '900', color: '#064e3b', marginTop: 12, letterSpacing: -0.5 },
   subtitle: { color: '#94a3b8', fontWeight: 'bold', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginTop: 4 },
   
-  formBox: { width: '100%' },
-  stepContainer: { gap: 20 },
-  inputGroup: { width: '100%' },
+  formBox: { width: '100%', gap: 16 }, // Added gap for spacing
+  inputGroup: { width: '100%', marginBottom: 4 },
   label: { fontSize: 12, fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, marginLeft: 4 },
   
   inputContainer: { borderWidth: 2, borderRadius: 16, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, height: 64 },
@@ -364,25 +384,24 @@ const styles = StyleSheet.create({
   submitBtn: { backgroundColor: '#047857', height: 64, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 8, shadowColor: '#a7f3d0', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 10 },
   submitText: { color: '#ffffff', fontWeight: '900', fontSize: 16, textTransform: 'uppercase', letterSpacing: 1 },
   
-  skipBtn: { alignItems: 'center', paddingVertical: 16 },
+  skipBtn: { alignItems: 'center', paddingVertical: 12 },
   skipBtnText: { color: '#94a3b8', fontWeight: 'bold', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 },
 
-  footerRow: { marginTop: 32, paddingTop: 24, borderTopWidth: 1, borderTopColor: '#f1f5f9', alignItems: 'center' },
+  footerRow: { marginTop: 24, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#f1f5f9', alignItems: 'center' },
   footerText: { color: '#64748b', fontWeight: '500' },
   footerTextBold: { color: '#047857', fontWeight: '900' },
 
   backBtn: { alignSelf: 'flex-start', marginBottom: 8, backgroundColor: '#f1f5f9', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   backBtnText: { color: '#64748b', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 },
   securityHeader: { alignItems: 'center', marginBottom: 16 },
-  iconCircle: { width: 64, height: 64, backgroundColor: '#ecfdf5', borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  securityTitle: { fontSize: 24, fontWeight: '900', color: '#0f172a', marginBottom: 8 },
-  securitySub: { color: '#64748b', textAlign: 'center', paddingHorizontal: 16 },
+  iconCircle: { width: 48, height: 48, backgroundColor: '#ecfdf5', borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }, // Made smaller to fit better
+  securitySub: { color: '#64748b', textAlign: 'center', paddingHorizontal: 16, fontSize: 12 },
   
   questionSelector: { backgroundColor: '#f8fafc', borderWidth: 2, borderColor: '#f1f5f9', borderRadius: 16, height: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
   questionSelectorText: { flex: 1, color: '#0f172a', fontWeight: 'bold', fontSize: 14, marginRight: 8 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#ffffff', borderTopLeftRadius: 32, borderTopRightRadius: 32, maxHeight: '80%', paddingBottom: 40 },
+  modalContent: { backgroundColor: '#ffffff', borderTopLeftRadius: 32, borderTopRightRadius: 32, paddingBottom: 40 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 24, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   modalTitle: { fontSize: 18, fontWeight: '900', color: '#0f172a' },
   closeBtn: { backgroundColor: '#f1f5f9', padding: 8, borderRadius: 20 },

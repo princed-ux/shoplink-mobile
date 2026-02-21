@@ -15,7 +15,6 @@ const API_URL = 'https://api.shoplinkvi.com';
 
 const { width, height } = Dimensions.get('window');
 
-// THE FIX: Isolate the KeyboardAvoidingView to iOS only. Android Modals handle it natively!
 const KeyboardWrapper = Platform.OS === 'ios' ? KeyboardAvoidingView : View;
 
 const AuroraBackground = () => {
@@ -58,8 +57,9 @@ export default function ProductManager() {
   const [modalVisible, setModalVisible] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [user, setUser] = useState(null);
-  const [activeInput, setActiveInput] = useState(null); 
 
+  // NUCLEAR FIX 1: activeInput state completely removed to stop re-render bouncing!
+  
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState(null);
 
@@ -67,15 +67,6 @@ export default function ProductManager() {
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [image, setImage] = useState(null);
-
-  const getContainerStyle = (fieldName, isTextArea = false) => {
-      const isActive = activeInput === fieldName;
-      return [
-          styles.inputContainer,
-          isTextArea && styles.textAreaContainer,
-          isActive ? styles.inputContainerActive : styles.inputContainerInactive
-      ];
-  };
 
   const loadData = async () => {
     setLoading(true);
@@ -166,7 +157,7 @@ export default function ProductManager() {
       setIsEditing(true); setEditId(item.id); setName(item.name); setPrice(item.price.toString()); setDescription(item.description || ''); setImage(item.image_url); setModalVisible(true);
   };
 
-  const resetForm = () => { setName(''); setPrice(''); setDescription(''); setImage(null); setIsEditing(false); setEditId(null); setActiveInput(null); };
+  const resetForm = () => { setName(''); setPrice(''); setDescription(''); setImage(null); setIsEditing(false); setEditId(null); };
 
   const renderProduct = ({ item }) => (
     <View style={styles.productCard}>
@@ -235,12 +226,18 @@ export default function ProductManager() {
              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalCloseBtn}><X size={20} color="#64748b" /></TouchableOpacity>
           </View>
 
-          {/* THE FIX: Replaced KeyboardAvoidingView with KeyboardWrapper so Android doesn't glitch */}
           <KeyboardWrapper 
             style={{ flex: 1 }} 
             behavior={Platform.OS === "ios" ? "padding" : undefined}
           >
-            <ScrollView style={styles.flex1} contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled">
+            {/* NUCLEAR FIX 2: Bounces disabled, persistent taps handled natively */}
+            <ScrollView 
+              style={styles.flex1} 
+              contentContainerStyle={styles.modalScroll} 
+              keyboardShouldPersistTaps="handled"
+              bounces={false}
+              overScrollMode="never"
+            >
                <TouchableOpacity onPress={pickImage} style={styles.imagePickerBox}>
                   {image ? <Image source={{ uri: image }} style={styles.imageFull} resizeMode="cover" /> : (
                     <View style={{ alignItems: 'center' }}>
@@ -254,14 +251,12 @@ export default function ProductManager() {
                <View style={styles.formGroup}>
                    <View style={styles.inputGroup}>
                       <Text style={styles.inputLabel}>Product Name</Text>
-                      <View style={getContainerStyle('name')}>
-                          <Tag size={20} color={activeInput === 'name' ? "#10b981" : "#94a3b8"} style={styles.inputIcon} />
+                      <View style={[styles.inputContainer, styles.inputInactive]}>
+                          <Tag size={20} color="#94a3b8" style={styles.inputIcon} />
                           <TextInput 
                             placeholder="e.g. Nike Air Max" 
                             value={name} 
                             onChangeText={setName} 
-                            onFocus={() => setActiveInput('name')}
-                            onBlur={() => setActiveInput(null)}
                             style={styles.input}
                             placeholderTextColor="#cbd5e1"
                             autoComplete="off"
@@ -274,14 +269,12 @@ export default function ProductManager() {
 
                    <View style={styles.inputGroup}>
                       <Text style={styles.inputLabel}>Price (₦)</Text>
-                      <View style={getContainerStyle('price')}>
-                          <Text style={[styles.priceSymbol, activeInput === 'price' ? styles.priceSymbolActive : styles.priceSymbolInactive]}>₦</Text>
+                      <View style={[styles.inputContainer, styles.inputInactive]}>
+                          <Text style={[styles.priceSymbol, styles.priceSymbolInactive]}>₦</Text>
                           <TextInput 
                             placeholder="0.00" 
                             value={price} 
                             onChangeText={setPrice} 
-                            onFocus={() => setActiveInput('price')}
-                            onBlur={() => setActiveInput(null)}
                             keyboardType="numeric"
                             style={styles.input}
                             placeholderTextColor="#cbd5e1"
@@ -295,14 +288,12 @@ export default function ProductManager() {
 
                    <View style={styles.inputGroup}>
                       <Text style={styles.inputLabel}>Details</Text>
-                      <View style={getContainerStyle('desc', true)}>
-                          <FileText size={20} color={activeInput === 'desc' ? "#10b981" : "#94a3b8"} style={styles.textAreaIcon} />
+                      <View style={[styles.inputContainer, styles.textAreaContainer, styles.inputInactive]}>
+                          <FileText size={20} color="#94a3b8" style={styles.textAreaIcon} />
                           <TextInput 
                             placeholder="Describe your product..." 
                             value={description} 
                             onChangeText={setDescription} 
-                            onFocus={() => setActiveInput('desc')}
-                            onBlur={() => setActiveInput(null)}
                             multiline
                             textAlignVertical="top"
                             style={styles.textAreaInput}
@@ -360,8 +351,8 @@ const styles = StyleSheet.create({
     modalTitle: { fontSize: 20, fontWeight: '900', color: '#0f172a' },
     modalCloseBtn: { backgroundColor: '#f8fafc', padding: 8, borderRadius: 20 },
     
-    // THE FIX: Added 100px paddingBottom so you can scroll up when the keyboard is open!
-    modalScroll: { padding: 24, paddingBottom: 100 },
+    // NUCLEAR FIX 3: Massive paddingBottom for Android so the scroll engine never constraints the keyboard pop
+    modalScroll: { padding: 24, paddingBottom: Platform.OS === 'android' ? 400 : 100 },
     
     imagePickerBox: { height: 256, backgroundColor: '#f8fafc', borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 32, borderWidth: 2, borderStyle: 'dashed', borderColor: '#e2e8f0', overflow: 'hidden' },
     imageFull: { width: '100%', height: '100%' },
@@ -373,14 +364,12 @@ const styles = StyleSheet.create({
     inputLabel: { fontSize: 12, fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, marginLeft: 4 },
     inputContainer: { borderWidth: 2, borderRadius: 16, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, height: 64 },
     textAreaContainer: { height: 128, alignItems: 'flex-start', paddingTop: 16, paddingBottom: 16 },
-    inputContainerActive: { backgroundColor: '#ffffff', borderColor: '#10b981', shadowColor: '#10b981', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
-    inputContainerInactive: { backgroundColor: '#f8fafc', borderColor: '#f1f5f9' },
+    inputInactive: { backgroundColor: '#f8fafc', borderColor: '#f1f5f9' },
     inputIcon: { marginRight: 12 },
     textAreaIcon: { marginRight: 12, marginTop: 4 },
     input: { flex: 1, fontWeight: 'bold', color: '#0f172a', fontSize: 18, ...(Platform.OS === 'web' && { outlineStyle: 'none' }) },
     textAreaInput: { flex: 1, fontWeight: 'bold', color: '#0f172a', fontSize: 16, lineHeight: 24, minHeight: 96, ...(Platform.OS === 'web' && { outlineStyle: 'none' }) },
     priceSymbol: { fontSize: 18, fontWeight: 'bold', marginRight: 12 },
-    priceSymbolActive: { color: '#10b981' },
     priceSymbolInactive: { color: '#94a3b8' },
     submitBtn: { backgroundColor: '#059669', height: 64, borderRadius: 16, alignItems: 'center', justifyContent: 'center', shadowColor: '#a7f3d0', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 10, marginBottom: 40 },
     submitBtnText: { color: '#ffffff', fontWeight: '900', fontSize: 18, letterSpacing: 1, textTransform: 'uppercase' }
